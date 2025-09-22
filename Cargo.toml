@@ -4,3 +4,18 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+actix-web="4"
+tokio={version="1", features=["macros","rt-multi-thread"]}
+# 옵셔널 derive 피처를 사용해야, serde 의 절차적 매크로인 #[derve(Serialize)] 와 #[derive(Deserialize)] 를 사용할 수 있다.
+# 이 피터는 기본으로 활성화되어 있지 않다. 프로젝트에 불필요한 디펜던시를 사용하지 않도록 하기 위해서이다.
+serde = {version = "1", features = ["derive"]}
+# 환경 변수들은 config 크레이트를 위한 문자열이며, serde의 표준 역직렬화 루틴을 사용하는 경우에는 정수를 선택할 수없다.
+# 커스텀 역직렬화 함수를 지정할 수 있음
+serde-aux = "3"
+config = "0.13"
+tracing = {version = "0.1", features = ["log"]}
+tracing-subscriber = {version = "0.3", features = ["registry", "env-filter"]}
+tracing-bunyan-formatter = "0.3"
+tracing-log = "0.1"
+secrecy = {version = "0.8", features = ["serde"]}
+tracing-actix-web = "0.6"

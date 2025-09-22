@@ -1,10 +1,21 @@
-use std::{
-    fs, 
-    io::{prelude::*, BufReader}, 
-    net::{TcpListener, TcpStream}
+use std::net::TcpListener;
+use rust_web::{
+    configuration::get_configuration,
+    startup::run,
 };
 
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    // 구성을 읽을 수 없으면 패닉에 빠진다
+    let configuration = get_configuration().expect("Failed to read configuration.");
+    let address = format!("{}:{}", configuration.application.host, configuration.application.port);
+    let listener = TcpListener::bind(address)?;
+    run(listener)?.await
+}
 
+
+
+/*
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
 
@@ -30,3 +41,4 @@ fn habdle_connection(mut stream: TcpStream) {
 
     stream.write_all(response.as_bytes()).unwrap();
 }
+*/
