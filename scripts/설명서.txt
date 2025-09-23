@@ -1,0 +1,8 @@
+1. init_db.sh를 실행시키기 위해서는 shell에서 해당 명령어 실행
+    -> chmod +x scripts/init_db.sh
+2. 다음 명령어로 Postgres 실행가능
+    -> ./scripts.init_db.sh
+3. shell에서 테이블 생성 및 CRUD를 생성하는 파일 생성
+    -> sqlx migrate add 파일 이름
+4. 위에 생성된 파일 실행
+    -> sqlx migrate run 혹은 SKIP_DOCKER=true ./scripts/init_db.sh

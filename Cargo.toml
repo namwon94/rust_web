@@ -19,3 +19,29 @@ tracing-bunyan-formatter = "0.3"
 tracing-log = "0.1"
 secrecy = {version = "0.8", features = ["serde"]}
 tracing-actix-web = "0.6"
+# 인증 오류 메시지 인코딩 -> 쿼리 파라미터는 URL의 일부 이므로 URL 인코딩을 해야됨
+urlencoding = "2"
+# HTML 엔티티 인코딩
+htmlescape = "0.3"
+anyhow = "1"
+
+# 테이블과 유사한 toml 구문을 사용해서 킨 코드 행을 줄이자
+# docker build 시 cargo build를 도커 이미지 안에서 실행하면, sqlx는 .env 파일의 DATABASE_URL 환경 변수가 가리키는 데이터베이스와 커넥션을 만드는데 실패함 
+# -> "offline" 추가
+# runtime-tokio-rustls : sqlx가 TLS 백엔드로서 퓨처와 rustls에 대해 tokio 런타임을 사용하도록 지시한다.
+# macros : sqlx::query! 와 sqlx::query_as!에 접근할 수 있다. / postgres : 특정 함수를 잠금 해제한다.(비표준 타입)
+# uuid : SQL UUID를 ssid 크레이트의 Uuid 타입에 매핑한다.
+# chrono : SQL timestampz를 chrono 크레이트의 Datetime<T> 타입에 매핑한다.
+# migrate : sqlx-cli가 내부적으로 사용한 동일한 함수를 사용해서 마이그레이션을 관리할 수 있다.(테스트 스위트에서 유용)
+[dependencies.sqlx]
+version = "0.6.3"
+default-features = false
+features = [
+    "runtime-tokio-rustls",
+    "macros",
+    "postgres",
+    "uuid",
+    "chrono",
+    "migrate",
+    "offline"
+]
