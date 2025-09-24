@@ -1,0 +1,35 @@
+{
+  "db": "PostgreSQL",
+  "5291ac9cf3470dfd527549a9dae0a2158da45b8d33de89c8cb979f0ce3bfdebd": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "username",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "cntn",
+          "ordinal": 2,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        SELECT id, name AS username, cntn\n        FROM test_table\n        WHERE name = $1\n        "
+  }
+}

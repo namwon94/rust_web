@@ -8,7 +8,7 @@ use tracing_actix_web::TracingLogger;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::routes::{
-    login_process,
+    home, login
 };
 
 pub struct Application {
@@ -16,8 +16,9 @@ pub struct Application {
     server: Server,
 }
 
+//생성, 실행, 종료 개념이 메서드로 분리되어 있으므로, 테스트 환경에서 각 단계별로 mocking 및 단위 테스트가 쉬워진다.
 impl Application {
-    //build 함수를 Application에 대한 생성자로 변환 / 비동기 함수이다.
+    //build 함수를 Application에 대한 생성자로 변환 / 비동기 함수이다. -> 초기화 실수 없이 안전하게 실행 환경을 만들 수 있다.
     pub async fn build(configuration: Settings) -> Result<Self, anyhow::Error> {
         let connection_pool = get_connection_pool(&configuration.database);
         let address = format!("{}:{}", configuration.application.host, configuration.application.port);
@@ -31,6 +32,7 @@ impl Application {
         Ok(Self{port, server})
     }
 
+    //getter 등은 실제 서비스가 어떤 포트에 바인딩되었는지 외부에서 쉽게 참조할 수 있게 만들어, 테스트와 모듈 의존성 관리에도 유용하다.
     pub fn port(&self) -> u16 {
         self.port
     }
@@ -62,8 +64,8 @@ async fn run(
             /*
             리다이렉션 대상인 "/hello.html" 경로에 대한 핸들러가 등록되어 있지 않으면, 클라이언트가 "/hello.html"로 다시 요청할 때 Actix Web이 해당 경로를 찾지 못해 404를 반환합니다.
              */
-            .route("/", web::get().to(login_process))
-            //.route("/", web::get().to(|| async { "Hello, world!" }))
+            .route("/", web::get().to(home))
+            .route("/login", web::post().to(login))
             //404 처리
             .default_service(web::route().to(not_found))
             //DB풀과 베이스 URL정보를 애플리케이션 상태에 추가한다.
@@ -81,7 +83,7 @@ pub fn get_connection_pool(configuration: &DatabaseSettings) -> PgPool {
 }
 
 //404 처리 HTML
-async fn not_found() -> HttpResponse {
+pub async fn not_found() -> HttpResponse {
     HttpResponse::NotFound().content_type(ContentType::html()).body(format!(
         r#"
         <!DOCTYPE html>

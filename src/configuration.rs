@@ -65,6 +65,7 @@ impl DatabaseSettings {
 }
 
 pub fn get_configuration() -> Result<Settings, config::ConfigError> {
+    //현재 디렉토리 출력
     let base_path = std::env::current_dir().expect("Failed to determin the current directory");
     let configuration_directory = base_path.join("configuration");
     //실행환경을 식별. 지정하지 않으면 'local'로 기본 설정

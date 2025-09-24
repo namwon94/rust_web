@@ -12,18 +12,34 @@ serde = {version = "1", features = ["derive"]}
 # 환경 변수들은 config 크레이트를 위한 문자열이며, serde의 표준 역직렬화 루틴을 사용하는 경우에는 정수를 선택할 수없다.
 # 커스텀 역직렬화 함수를 지정할 수 있음
 serde-aux = "3"
+# 설정을 관리하는 크레이트 / 환경변수, 파일, 커맨드라인 파싱 등 다양한 방법으로 설정값을 읽고 관리하는 데 사용한다.
 config = "0.13"
+# 고성능, 비동기 친화적 로깅 및 추적 라이브러리 / 기존 log크레이트와 연동해 호환성 있게 로그를 출력할 수 있다.
 tracing = {version = "0.1", features = ["log"]}
+# tracing의 서브스크라이버 구현체로 로그를 수신하고 출력하는 기능 담당
 tracing-subscriber = {version = "0.3", features = ["registry", "env-filter"]}
+# 로그를 Bunyan 스타일의 JSON 포맥으로 출력해주는 크레이트
 tracing-bunyan-formatter = "0.3"
+# 기존 log 크레이트로부터 tracing으로 로그 연동하는 브릿지 역할 수행
 tracing-log = "0.1"
+# 민감함 데이터를 안전하게 다루기 위한 크레이트 / serde기능을 통한 직렬화 지원으로 설정 파일 등과 안전하게 연동 가능
 secrecy = {version = "0.8", features = ["serde"]}
+# Actix-web 프레임워크용 tracing통합 크레이트
 tracing-actix-web = "0.6"
 # 인증 오류 메시지 인코딩 -> 쿼리 파라미터는 URL의 일부 이므로 URL 인코딩을 해야됨
 urlencoding = "2"
 # HTML 엔티티 인코딩
 htmlescape = "0.3"
+# 오류 처리를 간편하게 해주는 라이브러리 / 에러의 원인을 체인으로 추적할 수 있고, 다양한 에러 타입을 하나의 에러 타입으로 통합 관리 가능
 anyhow = "1"
+# 태그 파라미터는 16진수 문자열로 인코딩된 바이트 슬라이스. 디코딩할려면 hex 크레이트가 필요
+hex = "0.4"
+# actix_web에서 플래시 메시지를 다루는 프레임워크이며 장고의 메시지 프레임워크를 면밀하게 모델화한 것이다.
+actix-web-flash-messages = {version = "0.4", features = ["cookies"]}
+# 사용자 정의 에러 타입을 쉽고 간편하게 정의하도록 도와주는 라이브러리
+thiserror = "1"
+# We need to add the 'serde' feature
+uuid = {version = "1", features = ["v4", "serde"]}
 
 # 테이블과 유사한 toml 구문을 사용해서 킨 코드 행을 줄이자
 # docker build 시 cargo build를 도커 이미지 안에서 실행하면, sqlx는 .env 파일의 DATABASE_URL 환경 변수가 가리키는 데이터베이스와 커넥션을 만드는데 실패함 
