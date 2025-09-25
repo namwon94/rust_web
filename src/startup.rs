@@ -1,7 +1,7 @@
 use actix_web::{
     web, App, HttpServer, HttpResponse,
     dev::Server,
-    http::header::ContentType,
+    Result,
 };
 use std::net::TcpListener;
 use tracing_actix_web::TracingLogger;
@@ -10,6 +10,7 @@ use crate::configuration::{DatabaseSettings, Settings};
 use crate::routes::{
     home, login
 };
+use askama::Template;
 
 pub struct Application {
     port: u16,
@@ -82,22 +83,16 @@ pub fn get_connection_pool(configuration: &DatabaseSettings) -> PgPool {
     PgPoolOptions::new().acquire_timeout(std::time::Duration::from_secs(2)).connect_lazy_with(configuration.with_db())
 }
 
+#[derive(Template)]
+#[template(path = "404.html")]
+struct NotFoundTemplate;
+
 //404 처리 HTML
-pub async fn not_found() -> HttpResponse {
-    HttpResponse::NotFound().content_type(ContentType::html()).body(format!(
-        r#"
-        <!DOCTYPE html>
-        <html lang="en">
-            <head>
-                <meta charset="utf-8">
-                <title>Error!</title>
-            </head>
-            <body>
-                <h1>Error!</h1>
-                <p>404 - 페이지를 찾을 수 없습니다</p>
-                <p>Sorry, I don't know what you're asking for.</p>
-            </body>
-        </html>
-        "#
-    ))
+pub async fn not_found() -> Result<HttpResponse> {
+    let template = NotFoundTemplate;
+    let rendered = template.render().map_err(|e| {
+        actix_web::error::ErrorInternalServerError(e)
+    })?;
+
+    Ok(HttpResponse::Ok().content_type("text/html; charset=utf-8").body(rendered))
 }
