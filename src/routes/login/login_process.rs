@@ -1,10 +1,9 @@
 use actix_web::{
     error::InternalError,
     HttpResponse,
-    http::header::{
-        ContentType
-    },
-    web
+    http::header::ContentType,
+    web,
+    Result,
 };
 use sqlx::PgPool;
 //use actix_web_flash_messages::FlashMessage;
@@ -43,6 +42,7 @@ pub async fn login(
             let template = LoginProcess {
                 id, username, cntn: cntn.as_deref()
             };
+            //FromResidual 트레이트 : FromResidual 트레이트가 ? 연산자를 사용할 때 중요한 역할을 하는 트레이트이다. 에러 전파 또는 잔여(residual) 값을 상위 함수의 반환 타입으로 변환하는 방식을 정의
             let rendered = template.render().map_err(|e| {
                 let e = LoginError::TemplateError(e.into());
                 login_redirect(e)
@@ -63,11 +63,12 @@ pub async fn login(
 /*
 cntn 반환타입이 Option<String>인 이유는 해당 컬럼이 Null값을 허용하기 때문이다.
 */
-#[tracing::instrument(name="Login Process", skip(username, pool))]
+#[tracing::instrument(name="Login Process", skip(pool))]
 async fn login_process(
     username: &String,
     pool: &PgPool
 ) -> Result<Option<(uuid::Uuid, String, Option<String>)>, anyhow::Error> {
+    tracing::debug!("username : {}", username);
     let row: Option<_> = sqlx::query!(
         r#"
         SELECT id, name AS username, cntn
@@ -107,6 +108,19 @@ fn login_redirect(e: LoginError) -> InternalError<LoginError> {
     let response = HttpResponse::Ok().content_type(ContentType::html()).body(rendered);
 
     InternalError::from_response(e, response)
+}
+
+#[derive(Template)]
+#[template(path = "home.html")]
+struct LoginOut;
+
+pub async fn logout() -> Result<HttpResponse> {
+    let template = LoginOut;
+    let rendered = template.render().map_err(|e| {
+        actix_web::error::ErrorInternalServerError(e)
+    })?;
+
+    Ok(HttpResponse::Ok().content_type(ContentType::html()).body(rendered))
 }
 
 //#[derive(thiserror::Error)] : rust 표준 라이브러리의 std::error::Error트레이트 구현을 자동화한다.

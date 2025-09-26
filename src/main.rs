@@ -1,6 +1,7 @@
 use rust_web::{
     configuration::get_configuration,
-    startup::Application,
+    startup::Application, 
+    telemetry::{get_sbuscriber, init_subscriber},
 };
 use std::fmt::{Debug, Display};
 //Tokio 런타임에서 비동기 작업(task)이 정상적으로 완료되지 못했을 때 발생하는 에러 타입 / tokio::spawn으로 생성한 작업이 내부적으로 panic이 발생하면 JoinError로 감싸져 호출자에게 반환
@@ -8,6 +9,9 @@ use tokio::task::JoinError;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    //로그 출력 - level filter: expected one of "off", "error", "warn", "info", "debug", "trace", or a number 0-5
+    let subscriber = get_sbuscriber("debug,sqlx::query=trace".into(), std::io::stdout);
+    init_subscriber(subscriber);
     // 구성을 읽을 수 없으면 패닉에 빠진다
     let configuration = get_configuration().expect("Failed to read configuration.");
     let application = Application::build(configuration.clone()).await?;

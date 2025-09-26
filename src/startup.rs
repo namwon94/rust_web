@@ -8,7 +8,7 @@ use tracing_actix_web::TracingLogger;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::routes::{
-    home, login
+    home, login, logout
 };
 use askama::Template;
 
@@ -67,6 +67,7 @@ async fn run(
              */
             .route("/", web::get().to(home))
             .route("/login", web::post().to(login))
+            .route("/", web::post().to(logout))
             //404 처리
             .default_service(web::route().to(not_found))
             //DB풀과 베이스 URL정보를 애플리케이션 상태에 추가한다.

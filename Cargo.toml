@@ -17,11 +17,11 @@ config = "0.13"
 # 고성능, 비동기 친화적 로깅 및 추적 라이브러리 / 기존 log크레이트와 연동해 호환성 있게 로그를 출력할 수 있다.
 tracing = {version = "0.1", features = ["log"]}
 # tracing의 서브스크라이버 구현체로 로그를 수신하고 출력하는 기능 담당
-tracing-subscriber = {version = "0.3", features = ["registry", "env-filter"]}
-# 로그를 Bunyan 스타일의 JSON 포맥으로 출력해주는 크레이트
-tracing-bunyan-formatter = "0.3"
+tracing-subscriber = {version = "0.3", features = ["registry", "env-filter", "json", "fmt", "time"]}
 # 기존 log 크레이트로부터 tracing으로 로그 연동하는 브릿지 역할 수행
 tracing-log = "0.1"
+# 로그를 Bunyan 스타일의 JSON 포맥으로 출력해주는 크레이트
+tracing-bunyan-formatter = "0.3"
 # 민감함 데이터를 안전하게 다루기 위한 크레이트 / serde기능을 통한 직렬화 지원으로 설정 파일 등과 안전하게 연동 가능
 secrecy = {version = "0.8", features = ["serde"]}
 # Actix-web 프레임워크용 tracing통합 크레이트
