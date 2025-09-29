@@ -10,7 +10,7 @@ use tokio::task::JoinError;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     //로그 출력 - level filter: expected one of "off", "error", "warn", "info", "debug", "trace", or a number 0-5
-    let subscriber = get_sbuscriber("debug,sqlx::query=trace".into(), std::io::stdout);
+    let subscriber = get_sbuscriber();
     init_subscriber(subscriber);
     // 구성을 읽을 수 없으면 패닉에 빠진다
     let configuration = get_configuration().expect("Failed to read configuration.");
