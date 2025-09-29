@@ -20,6 +20,14 @@ pub fn get_sbuscriber() -> Box<dyn Subscriber + Send + Sync> {
         .try_into()
         .expect("Failed to parse APP_ENVIRONMENT");
     match environment {
+        /*
+        Box::new로 묶은 이유
+            -> 각 함수의 impl Subscriber + Send + Sync 반환 타입은 **서로 다른 불투명 타입(opaque type)**으로 취급됩니다. 
+                컴파일러 입장에서:
+                    init_local_layer가 반환하는 impl Subscriber = 타입 A
+                    init_production_layer가 반환하는 impl Subscriber = 타입 B
+                비록 둘 다 Subscriber 트레이트를 구현하지만, 구체적인 타입이 다르기 때문에 match의 각 arm이 호환되지 않는 것입니다
+         */
         Environment::Local => Box::new(init_local_layer("info,sqlx::query=trace".into(), std::io::stdout)),
         Environment::Production => Box::new(init_production_layer("info,sqlx::query=trace".into(), std::io::stdout)),
     }
