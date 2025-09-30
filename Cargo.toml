@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 actix-web="4"
 tokio={version="1", features=["macros","rt-multi-thread"]}
+actix-files = "0.6"
 # 옵셔널 derive 피처를 사용해야, serde 의 절차적 매크로인 #[derve(Serialize)] 와 #[derive(Deserialize)] 를 사용할 수 있다.
 # 이 피터는 기본으로 활성화되어 있지 않다. 프로젝트에 불필요한 디펜던시를 사용하지 않도록 하기 위해서이다.
 serde = {version = "1", features = ["derive"]}

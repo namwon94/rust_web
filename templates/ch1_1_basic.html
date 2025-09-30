@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust 팝업 예제</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/popup.css">
+</head>
+<body>
+    <script src="/js/app.js"></script>
+    <div class="container">
+        <header>
+            <h1>Tracing Basic</h1>
+        </header>
+        <div id="popup-basic" class="popup-overlay">
+            <div class="popup-container">
+                <div class="popup-header">
+                    <h3>기본 팝업</h3>
+                    <button class="popup-close" onclick="closePopup('popup-basic')">×</button>
+                </div>
+                <div class="popup-body">
+                    <p>이것은 기본 팝업입니다.</p>
+                    <p>Rust 테마를 적용한 심플한 디자인입니다.</p>
+                </div>
+                <div class="popup-footer">
+                    <button class="rust-btn" onclick="closePopup('popup-basic')">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

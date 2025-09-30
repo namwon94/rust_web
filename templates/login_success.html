@@ -13,8 +13,13 @@
         <p>{{cntn.unwrap()}}</p>
         {%endif%}
         <p>Availavle actions</p>
-        <form name="logoutForm" action="/" method="post">
-            <button type="submit">Login out</button>
-        </form>
+        <div>
+            <form name="logoutForm" action="/" method="post">
+                <button type="submit">Login out</button>
+            </form>
+            <form name="tableOfContentsForm" action="/contents" method="post">
+                <button type="submit">목차 이동</button>
+            </form>
+        </div>
     </body>
 </html>

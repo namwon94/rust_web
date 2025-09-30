@@ -2,3 +2,93 @@ sqlx의 쿼리 매크로(query!, query_as! 등)는 컴파일 타임에 데이터
 이를 위해 컴파일 시점에 데이터베이스 접속 정보가 필요하고, 기본적으로 DATABASE_URL 환경변수가 설정되어 있어야 합니다.
 또는 cargo sqlx prepare 명령을 실행해 쿼리를 미리 준비해 캐시(sqlx-data.json)를 만들어야 합니다.
 이 파일이 있으면 컴파일 시 데이터베이스 연결 없이도 쿼리 검증이 가능합니다.
+
+
+match arms의 타입 규칙이 다른가?
+    -> imple Trait는 **어떤 구체 타입인지 숨긴다** 는 것이 목적이므로, 컴파일러도 그 타입이 정확히 뭔지 모른다. 따라서 서로 다른 impl Trait는 같은 타입인지 확이할 방법이 없다.
+특징 / 구체 타입(Concrete Type)        VS        불투명 타입(Opaque Type)
+컴파일러 인식 / 정확한 타입 알고 있음                   뭔가 트레이트 구현한 것
+타입 비교 /    정확히 비교 가능                       비교 불가능
+match arms / ✅ 같은 타입이면 OK                    ❌ 각각 다른 불투명 타입
+예시 /        Ordering, Decimal                  impl Subscriber
+해결책 /       필요 없음                            Box<dyn> 또는 분리
+예외 continue와 !(never type)의 특별 한 경우
+    -> continue의 타입은 !(never. type) !의 의미는 "이 코드는 절대 반환하지 않음"을 의미 !는 모든 타입으로 강제 변환(coercion) 가능
+
+
+
+
+
+
+
+
+
+
+
+
+           <section class="toc-section">
+                <h3>1. Tracing</h3>
+                <ul>
+                    <li>
+                        <a href="/tracing_basic">
+                            <span class="toc-number">1.1</span>
+                            <span class="toc-title">Tracing 기초</span>
+                        </a>
+                        <ul class="toc-subsection">
+                            <li><a href="#subscriber">Subscriber란?</a></li>
+                            <li><a href="#span-event">Span과 Event</a></li>
+                            <li><a href="#layers">레이어 구조</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </section>
+이건 table_contents.html 이고 a 태그를 tracing_basic을 실행
+use actix_web::{HttpResponse, Result, http::header::ContentType,};
+use askama::Template; 
+
+#[derive(Template)]
+#[template(path = "ch1_1_basic.html")]
+struct TracingBasicTemplate;
+
+pub async fn tracing_basic() -> Result<HttpResponse> {
+    let template = TracingBasicTemplate;
+    let rendered = template.render().map_err(|e| {
+        actix_web::error::ErrorInternalServerError(e)
+    })?;
+    Ok(HttpResponse::Ok().content_type(ContentType::html()).body(rendered))
+}
+해당 ch1_1_basic.rs에서 tracing_basic를 실행 후
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust 팝업 예제</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Tracing Basic</h1>
+        </header>
+        <div id="popup-basic" class="popup-overlay">
+            <div class="popup-container">
+                <div class="popup-header">
+                    <h3>기본 팝업</h3>
+                    <button class="popup-close" onclick="closePopup('popup-basic')">×</button>
+                </div>
+                <div class="popup-body">
+                    <p>이것은 기본 팝업입니다.</p>
+                    <p>Rust 테마를 적용한 심플한 디자인입니다.</p>
+                </div>
+                <div class="popup-footer">
+                    <button class="rust-btn" onclick="closePopup('popup-basic')">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+해당 ch1_1_basic.html로 이동하는 것까지는 만들었다.
+하지만 내가 원하는 것은 ch1_1_basic.html가 팝업으로 뜨는 것을 원했는데 아마 ch1_1_basic.rs에서 내가 실행한 것이 팝업을 뛰우는 용도가 아닌 것 같음 그래서 해결방안 과 지금 내가 ch1_1_basic.html에서 onclick 부분을 app.js에 작성을 해놨는데 그것을 import 해야되는 것인지도 확인 바람

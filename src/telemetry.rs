@@ -9,17 +9,19 @@ use tracing_subscriber::{
     EnvFilter 
 };
 use tracing_log::LogTracer;
-use crate::configuration::Environment;
 //use tokio::task::JoinHandle;
 //BunyanFormattingLayer는 많은 메타데이터 필드를 포함하여 출력한다. 
 //use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
 
-pub fn get_sbuscriber() -> Box<dyn Subscriber + Send + Sync> {
-    let environment: Environment = std::env::var("APP_ENVIRONMENT")
-        .unwrap_or_else(|_| "local".into())
-        .try_into()
-        .expect("Failed to parse APP_ENVIRONMENT");
-    match environment {
+pub fn get_sbuscriber<Sink>(
+    env_filter: String,
+    sink: Sink,
+    use_json: bool,
+) -> Box<dyn Subscriber + Send + Sync + 'static>
+    where 
+        Sink: for<'a>MakeWriter<'a> + Send + Sync + 'static  
+{
+    if use_json {
         /*
         Box::new로 묶은 이유
             -> 각 함수의 impl Subscriber + Send + Sync 반환 타입은 **서로 다른 불투명 타입(opaque type)**으로 취급됩니다. 
@@ -28,8 +30,9 @@ pub fn get_sbuscriber() -> Box<dyn Subscriber + Send + Sync> {
                     init_production_layer가 반환하는 impl Subscriber = 타입 B
                 비록 둘 다 Subscriber 트레이트를 구현하지만, 구체적인 타입이 다르기 때문에 match의 각 arm이 호환되지 않는 것입니다
          */
-        Environment::Local => Box::new(init_local_layer("info,sqlx::query=trace".into(), std::io::stdout)),
-        Environment::Production => Box::new(init_production_layer("info,sqlx::query=trace".into(), std::io::stdout)),
+        Box::new(init_json_layer(env_filter, sink))
+    }else {
+        Box::new(init_pretty_layer(env_filter, sink))
     }
 }
 
@@ -50,7 +53,7 @@ pub fn get_sbuscriber() -> Box<dyn Subscriber + Send + Sync> {
     -> rust가 멀티스레드 안전성을 엄격히 검사하기 때문에 반환 타입에 Send + Sync제약을 명시해야 오류가 발생하지 않는다.
     -> tracgin같은 전역 로그 서브스크라이버는 스레드 세이프가 기본이다. 
 */
-fn init_local_layer<Sink>(
+fn init_pretty_layer<Sink>(
     env_filter: String,
     //sink 타입 : tracing_subscriber에서 로그를 출력할 대상, 즉 로그가 기록될 "출력 채널" 역할을 하는 타입이다.
     sink: Sink
@@ -96,7 +99,7 @@ fn init_local_layer<Sink>(
     
 }
 
-fn init_production_layer<Sink>(
+fn init_json_layer<Sink>(
     env_filter: String,
     sink: Sink
 ) -> impl Subscriber + Send + Sync + 'static

@@ -8,7 +8,9 @@ use tracing_actix_web::TracingLogger;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::routes::{
-    home, login, logout
+    contents,
+    tracing_basic,
+    //home, login, logout, 
 };
 use askama::Template;
 
@@ -65,11 +67,15 @@ async fn run(
             /*
             리다이렉션 대상인 "/hello.html" 경로에 대한 핸들러가 등록되어 있지 않으면, 클라이언트가 "/hello.html"로 다시 요청할 때 Actix Web이 해당 경로를 찾지 못해 404를 반환합니다.
              */
-            .route("/", web::get().to(home))
-            .route("/login", web::post().to(login))
-            .route("/", web::post().to(logout))
+            //.route("/", web::get().to(home))
+            //.route("/login", web::post().to(login))
+            //.route("/", web::post().to(logout))
+            .route("/", web::get().to(contents))
+            .route("/tracing_basic", web::get().to(tracing_basic))
             //404 처리
             .default_service(web::route().to(not_found))
+            .service(actix_files::Files::new("/css", "./static/css").show_files_listing())
+            .service(actix_files::Files::new("/js", "./static/js").show_files_listing())
             //DB풀과 베이스 URL정보를 애플리케이션 상태에 추가한다.
             .app_data(db_pool.clone())
             .app_data(base_url.clone())
