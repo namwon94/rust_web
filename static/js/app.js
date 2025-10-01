@@ -1,37 +1,41 @@
-// 팝업 열기
-// function showPopup(popupId) {
-//     const popup = document.getElementById(popupId);
-//     if (popup) {
-//         popup.classList.add('active');
-//         document.body.style.overflow = 'hidden'; // 배경 스크롤 방지
-//     }
-// }
-
-function showPopup(url, popupContainerId) {
+function showPopup(url, popupId) {
     fetch(url)
     .then(response => response.text())
     .then(html => {
-        const container = document.getElementById(popupContainerId);
+        const container = document.getElementById(popupId);
+        if(!container) {
+            console.error("Element with id ${popupId} not found");
+        }
         container.innerHTML = html;
-        container.classList.add('active');
+        container.style.display = 'block';
         document.body.style.overflow = 'hidden';
+
+        //팝업 내부의 overlay에 active 클래스 추가
+        const overlay = container.querySelector('.popup-overlay');
+        if(overlay) {
+            overlay.classList.add('active');
+        }
+    })
+    .catch(error => {
+        console.log("Error loading popup:", error)
     });
 }
 
 // 팝업 닫기
 function closePopup(popupId) {
-    const popup = document.getElementById(popupId);
-    if (popup) {
-        popup.classList.remove('active');
+    const container = document.getElementById(popupId);
+    if (container) {
+        container.innerHTML = '';
+        container.style.display = 'none';
         document.body.style.overflow = ''; // 스크롤 복원
     }
 }
 
 // 모든 팝업 닫기
 function closeAllPopups() {
-    const popups = document.querySelectorAll('.popup-overlay');
-    popups.forEach(popup => {
-        popup.classList.remove('active');
+    const container = document.querySelectorAll('.popup-overlay');
+    container.forEach(container => {
+        container.classList.remove('active');
     });
     document.body.style.overflow = '';
 }

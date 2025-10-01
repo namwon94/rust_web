@@ -59,23 +59,24 @@ async fn run(
     클로저를 인자로 받아 실행 하는 이유
         -> 서버가 시작될 때 합넙만 실행되는 것이 아니라, 요청이 들어올 때마다 필요한 설정을 새로 만들 수 있도록 설계
     move 클로저 : 외부에 잡아야 할 값이 있을 때 클로저 앞에 move가 붙는다. 클로저가 캡처하는 외부 변수들의 소유권을 가져가서 다른 스레드로 안전하게 전달할 수 있다.
+    리다이렉션 대상인 "/hello.html" 경로에 대한 핸들러가 등록되어 있지 않으면, 클라이언트가 "/hello.html"로 다시 요청할 때 Actix Web이 해당 경로를 찾지 못해 404를 반환합니다.
     */
     let server = HttpServer::new(move || {
         App::new()
             //요청 로깅 미들웨어 추가
             .wrap(TracingLogger::default())
-            /*
-            리다이렉션 대상인 "/hello.html" 경로에 대한 핸들러가 등록되어 있지 않으면, 클라이언트가 "/hello.html"로 다시 요청할 때 Actix Web이 해당 경로를 찾지 못해 404를 반환합니다.
-             */
-            //.route("/", web::get().to(home))
-            //.route("/login", web::post().to(login))
-            //.route("/", web::post().to(logout))
+            //정적 파일
+            .service(actix_files::Files::new("/css", "./static/css"))
+            .service(actix_files::Files::new("/js", "./static/js"))
+            .service(actix_files::Files::new("/templates", "./templates"))
+            //동적 라우트
             .route("/", web::get().to(contents))
             .route("/tracing_basic", web::get().to(tracing_basic))
             //404 처리
             .default_service(web::route().to(not_found))
-            .service(actix_files::Files::new("/css", "./static/css").show_files_listing())
-            .service(actix_files::Files::new("/js", "./static/js").show_files_listing())
+            //.route("/", web::get().to(home))
+            //.route("/login", web::post().to(login))
+            //.route("/", web::post().to(logout))
             //DB풀과 베이스 URL정보를 애플리케이션 상태에 추가한다.
             .app_data(db_pool.clone())
             .app_data(base_url.clone())
