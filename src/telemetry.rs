@@ -13,7 +13,7 @@ use tracing_log::LogTracer;
 //BunyanFormattingLayer는 많은 메타데이터 필드를 포함하여 출력한다. 
 //use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
 
-pub fn get_sbuscriber<Sink>(
+pub fn get_subscriber<Sink>(
     env_filter: String,
     sink: Sink,
     use_json: bool,

@@ -3,6 +3,16 @@ name = "rust_web"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+path = "src/main.rs"
+name = "rust_web"
+
+[dev-dependencies]
+once_cell = "1"
+
 [dependencies]
 actix-web="4"
 tokio={version="1", features=["macros","rt-multi-thread"]}
@@ -43,6 +53,13 @@ thiserror = "1"
 uuid = {version = "1", features = ["v4", "serde"]}
 # Template 엔진
 askama = "0.14"
+reqwest = { version = "0.11", default-features = false, features = [
+    "json",
+    "rustls-tls",
+    "cookies",
+]}
+serde_json = "1"
+chrono = {version = "0.4.22", default-features = false, features = ["clock"]}
 
 
 # 테이블과 유사한 toml 구문을 사용해서 킨 코드 행을 줄이자
