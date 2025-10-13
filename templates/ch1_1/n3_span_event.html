@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust 팝업 예제</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/popup.css">
+</head>
+<body>
+    <script src="/js/app.js"></script>
+    <div class="container">
+        <header>
+            <h1>Span And Event</h1>
+        </header>
+        <div class="popup-overlay">
+            <div class="popup-container">
+                <div class="popup-header">
+                    <h3>Span And Event</h3>
+                    <button class="popup-close" onclick="closePopup('popup-basic')">×</button>
+                </div>
+                <div class="popup-body">
+                    <p>1. Span : 시간의 기간을 나타내며, 작업의 시작과 끝을 추적한다.</p>
+                    <p>2. Event : 특정 시점에 발생하는 일회성 로그이다.</p>
+                </div>
+                <div class="popup-footer">
+                    <button class="rust-btn" onclick="closePopup('popup-basic')">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

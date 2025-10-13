@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust 팝업 예제</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/popup.css">
+</head>
+<body>
+    <script src="/js/app.js"></script>
+    <div class="container">
+        <header>
+            <h1>Tracing Basic</h1>
+        </header>
+        <div class="popup-overlay">
+            <div class="popup-container">
+                <div class="popup-header">
+                    <h3>Tracing Basic</h3>
+                    <button class="popup-close" onclick="closePopup('popup-basic')">×</button>
+                </div>
+                <div class="popup-body">
+                    <p>1. 구조화된 로깅과 분산 추적을 위한 강력한 프레임워크이다. 표준 로깅보다 더 풍부한 진단 정보를 제공한다.</p>
+                    <p>2. 복잡한 비동기 애플리케이션이나 마이크로서비스에서 요청 흐름을 추적하는 데 매우 유용하다. async/await와 완벽하게 통합</p>
+                    <p>3. 성능 : 비활성화된 로그는 거의 오버헤드가 없다.</p>
+                    <p>4. 구조화 : JSON,텍스트 등 다양한 형식으로 출력 가능</p>
+                    <p>5. 컨텍스트 : Span을 통해 관련 로그를 자동으로 그룹화</p>
+                    <p>6. 확장성 : 커스텀 subscriber로 원하는 백엔드에 로그 전송 가능</p>
+                </div>
+                <div class="popup-footer">
+                    <button class="rust-btn" onclick="closePopup('popup-basic')">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

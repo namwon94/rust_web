@@ -11,17 +11,35 @@
     <script src="/js/app.js"></script>
     <div class="container">
         <header>
-            <h1>Tracing Basic</h1>
+            <h1>Subscriber Example</h1>
         </header>
         <div class="popup-overlay">
             <div class="popup-container">
                 <div class="popup-header">
-                    <h3>기본 팝업</h3>
+                    <h3>Example</h3>
                     <button class="popup-close" onclick="closePopup('popup-basic')">×</button>
                 </div>
                 <div class="popup-body">
-                    <p>이것은 기본 팝업입니다.</p>
-                    <p>Rust 테마를 적용한 심플한 디자인입니다.</p>
+                    <h4>핵심 코드</h4>
+                    <pre><code>
+pub fn get_subscriber<Sink>(
+    env_filter: String,
+    sink: Sink,
+    use_json: bool,
+) -&gt; Box&lt;dyn Subscriber + Send + Sync + 'static&gt;
+    where 
+        Sink: for&lt;'a&gt;MakeWriter&lt;'a&gt; + Send + Sync + 'static  
+{
+    if use_json {
+        Box::new(init_json_layer(env_filter, sink))
+    }else {
+        Box::new(init_pretty_layer(env_filter, sink))
+    }
+}
+                    </code></pre>
+                </div>
+                <div class="info-box">
+                    <p>조건에 따라 <strong>다른 타입</strong>을 반환하고 싶을 때, <code>impl Trait</code>만으로는 해결할 수 없습니다.</p>
                 </div>
                 <div class="popup-footer">
                     <button class="rust-btn" onclick="closePopup('popup-basic')">닫기</button>

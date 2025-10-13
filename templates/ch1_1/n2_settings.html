@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust 팝업 예제</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/popup.css">
+</head>
+<body>
+    <script src="/js/app.js"></script>
+    <div class="container">
+        <header>
+            <h1>Settings</h1>
+        </header>
+        <div class="popup-overlay">
+            <div class="popup-container">
+                <div class="popup-header">
+                    <h3>Settings</h3>
+                    <button class="popup-close" onclick="closePopup('popup-basic')">×</button>
+                </div>
+                <div class="popup-body">
+                    <p>1. 기본 설정 : Cargo.toml에서 Dependencies 추가</p>
+                    <p>
+                        &nbsp;&nbsp;#고성능, 비동기 친화적 로깅 및 추적 라이브러리 / 기존 log크레이트와 연동해 호환성 있게 로그를 출력할 수 있다.<br>
+                        &nbsp;&nbsp;tracing = {version = "0.1", features = ["log"]}
+                    </p>
+                    <p>
+                        &nbsp;&nbsp;#tracing의 서브스크라이버 구현체로 로그를 수신하고 출력하는 기능 담당<br>
+                        &nbsp;&nbsp;tracing-subscriber = {version = "0.3", features = ["registry", "env-filter", "json", "fmt", "time"]}
+                    </p>
+                    <p>
+                        &nbsp;&nbsp;#기존 log 크레이트로부터 tracing으로 로그 연동하는 브릿지 역할 수행<br>
+                        &nbsp;&nbsp;tracing-log = "0.1"
+                    </p>
+                    <p>
+                        &nbsp;&nbsp;#로그를 Bunyan 스타일의 JSON 포맥으로 출력해주는 크레이트<br>
+                        &nbsp;&nbsp;tracing-bunyan-formatter = "0.3"
+                    </p>
+                    <p>
+                        &nbsp;&nbsp;#Actix-web 프레임워크용 tracing통합 크레이트<br>
+                        &nbsp;&nbsp;tracing-actix-web = "0.6"
+                    </p>
+                </div>
+                <div class="popup-footer">
+                    <button class="rust-btn" onclick="closePopup('popup-basic')">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
