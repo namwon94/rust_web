@@ -47,6 +47,8 @@ anyhow = "1"
 hex = "0.4"
 # actix_web에서 플래시 메시지를 다루는 프레임워크이며 장고의 메시지 프레임워크를 면밀하게 모델화한 것이다.
 actix-web-flash-messages = {version = "0.4", features = ["cookies"]}
+# 세션 관리 기능 제공 -> 레디스 백엔드
+actix-session = {version = "0.6", features = ["redis-rs-tls-session"]}
 # 사용자 정의 에러 타입을 쉽고 간편하게 정의하도록 도와주는 라이브러리
 thiserror = "1"
 # We need to add the 'serde' feature

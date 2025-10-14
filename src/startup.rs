@@ -2,15 +2,26 @@ use actix_web::{
     web, App, HttpServer, HttpResponse,
     dev::Server,
     Result,
+    cookie::Key
 };
+use actix_web_flash_messages::{
+    FlashMessagesFramework,
+    storage::CookieMessageStore
+};
+use secrecy::{
+    ExposeSecret,
+    Secret,
+};
+//use actix_session::SessionMiddleware;
+//use actix_session::storage::RedisSessionStore;
 use std::net::TcpListener;
 use tracing_actix_web::TracingLogger;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::routes::{
     contents,
-    tracing_basic,
-    //home, login, logout, 
+    //tracing_basic,
+    home, login, logout, 
 };
 use askama::Template;
 
@@ -29,7 +40,7 @@ impl Application {
         let listener = TcpListener::bind(&address)?;
         let port = listener.local_addr().unwrap().port();
         let server = run(
-            listener, connection_pool, configuration.application.base_url
+            listener, connection_pool, configuration.application.base_url, configuration.application.hmac_secret
         ).await?;
 
         Ok(Self{port, server})
@@ -50,10 +61,13 @@ impl Application {
 pub struct ApplicationBaseUrl(pub String);
 
 async fn run(
-    listener: TcpListener, db_pool: PgPool, base_url: String
+    listener: TcpListener, db_pool: PgPool, base_url: String, hamc_secret: Secret<String>,
 ) -> Result<Server, std::io::Error> {
     let db_pool = web::Data::new(db_pool);
     let base_url = web::Data::new(ApplicationBaseUrl(base_url));
+    let secret_key = Key::from(hamc_secret.expose_secret().as_bytes());
+    let message_store = CookieMessageStore::builder(secret_key.clone()).build();
+    let message_framework = FlashMessagesFramework::builder(message_store).build();
     /*
     HttpServer::new 클로저 내에서 App::new()를 만들고 미들웨어, 라우트, 공유 상태를 설정한다.
     클로저를 인자로 받아 실행 하는 이유
@@ -63,6 +77,7 @@ async fn run(
     */
     let server = HttpServer::new(move || {
         App::new()
+            .wrap(message_framework.clone())
             //요청 로깅 미들웨어 추가
             .wrap(TracingLogger::default())
             //정적 파일
@@ -71,12 +86,12 @@ async fn run(
             .service(actix_files::Files::new("/templates", "./templates"))
             //동적 라우트
             .route("/", web::get().to(contents))
-            .route("/tracing_basic", web::get().to(tracing_basic))
+            //.route("/tracing_basic", web::get().to(tracing_basic))
             //404 처리
             .default_service(web::route().to(not_found))
-            //.route("/", web::get().to(home))
-            //.route("/login", web::post().to(login))
-            //.route("/", web::post().to(logout))
+            .route("/home", web::get().to(home))
+            .route("/login", web::post().to(login))
+            .route("/logout", web::post().to(logout))
             //DB풀과 베이스 URL정보를 애플리케이션 상태에 추가한다.
             .app_data(db_pool.clone())
             .app_data(base_url.clone())

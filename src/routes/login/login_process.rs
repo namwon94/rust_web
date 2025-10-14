@@ -2,9 +2,11 @@ use actix_web::{
     error::InternalError,
     HttpResponse,
     http::header::ContentType,
+    http::header::LOCATION,
     web,
     Result,
 };
+use actix_web_flash_messages::FlashMessage;
 use sqlx::PgPool;
 //use actix_web_flash_messages::FlashMessage;
 //anyhow의 확장 트레이트를 스코프 안으로 가져온다.
@@ -20,7 +22,7 @@ pub struct FormData {
 }
 
 #[derive(Template)]
-#[template(path = "login_success.html")]
+#[template(path = "login/success.html")]
 struct LoginProcess<'a> {
     id: Uuid,
     username: String,
@@ -85,37 +87,50 @@ async fn login_process(
     Ok(row)
 }
 
-#[derive(Template)]
-#[template(path = "login_redirect.html")]
-struct LoginRedirect {
-    error_message: String,
-}
+// #[derive(Template)]
+// #[template(path = "login/redirect.html")]
+// struct LoginRedirect {
+//     error_message: String,
+// }
 
-fn login_redirect(e: LoginError) -> InternalError<LoginError> {
+// fn login_redirect(e: LoginError) -> InternalError<LoginError> {
     
-    let template = LoginRedirect {
-        error_message: e.to_string()
-    };
-    //?를 사용할려면 반환 타입이 Result 혹은 Option 이어야 하는데 아니기 때문에 사용을 못한다. 그래서 macth로 명시적 에러처리를 했음.
-    let rendered = match template.render() {
-        Ok(s) => s,
-        Err(e) => {
-            let err = LoginError::TemplateError(e.into());
-            return InternalError::from_response(err, HttpResponse::InternalServerError().finish())
-        }
-    };
-    //FlashMessage::error(e.to_string()).send();
-    let response = HttpResponse::Ok().content_type(ContentType::html()).body(rendered);
+//     let template = LoginRedirect {
+//         error_message: e.to_string()
+//     };
+//     //?를 사용할려면 반환 타입이 Result 혹은 Option 이어야 하는데 아니기 때문에 사용을 못한다. 그래서 macth로 명시적 에러처리를 했음.
+//     let rendered = match template.render() {
+//         Ok(s) => s,
+//         Err(e) => {
+//             let err = LoginError::TemplateError(e.into());
+//             return InternalError::from_response(err, HttpResponse::InternalServerError().finish())
+//         }
+//     };
+//     //FlashMessage::error(e.to_string()).send();
+//     let response = HttpResponse::Ok().content_type(ContentType::html()).body(rendered);
+
+//     InternalError::from_response(e, response)
+// }
+fn login_redirect(e: LoginError) -> InternalError<LoginError> {
+    FlashMessage::error(e.to_string()).send();
+    let response = HttpResponse::SeeOther()
+        .insert_header((LOCATION, "/home"))
+        .finish();
 
     InternalError::from_response(e, response)
 }
 
 #[derive(Template)]
-#[template(path = "home.html")]
-struct LoginOut;
+#[template(path = "login/home.html")]
+struct LoginOut {
+    message: String
+}
 
 pub async fn logout() -> Result<HttpResponse> {
-    let template = LoginOut;
+    let message = String::new();
+    let template = LoginOut{
+        message,
+    };
     let rendered = template.render().map_err(|e| {
         actix_web::error::ErrorInternalServerError(e)
     })?;

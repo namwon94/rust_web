@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/popup.css">
+</head>
+<body>
+    <!-- 회원가입 팝업 -->
+    <div class="popup-overlay active">
+        <div class="popup-container popup-large">
+            <div class="popup-header">
+                <h3>🦀 회원가입</h3>
+                <button class="popup-close" onclick="closePopup('popup-basic')">&times;</button>
+            </div>
+            
+            <div class="popup-body">
+                <form id="signupForm" onsubmit="handleSignup(event)">
+                    <!-- 이메일 -->
+                    <div class="form-group">
+                        <label for="email">이메일 *</label>
+                        <input type="email" id="email" name="email" placeholder="example@email.com" required>
+                    </div>
+
+                    <!-- 이름 -->
+                    <div class="form-group">
+                        <label for="name">이름 *</label>
+                        <input type="text" id="name" name="name" placeholder="홍길동" required>
+                    </div>
+
+                    <!-- 별명 + 중복확인 -->
+                    <div class="form-group">
+                        <label for="nickname">별명 *</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="nickname" name="nickname" placeholder="별명을 입력하세요" required style="flex: 1;">
+                            <button type="button" class="rust-btn rust-btn-info" onclick="checkNickname()" style="white-space: nowrap; min-width: 120px;">중복 확인</button>
+                        </div>
+                        <small id="nicknameStatus" style="display: block; margin-top: 8px; color: var(--text-secondary);"></small>
+                    </div>
+
+                    <!-- 비밀번호 + 확인 버튼 -->
+                    <div class="form-group">
+                        <label for="password">비밀번호 *</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="password" id="password" name="password" placeholder="비밀번호를 입력하세요" required style="flex: 1;">
+                            <button type="button" class="rust-btn rust-btn-warning" onclick="togglePasswordVisibility()" style="white-space: nowrap; min-width: 120px;">
+                                <span id="toggleIcon">👁️ 보기</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 비밀번호 확인 -->
+                    <div class="form-group">
+                        <label for="passwordConfirm">비밀번호 확인 *</label>
+                        <input type="password" id="passwordConfirm" name="passwordConfirm" placeholder="비밀번호를 다시 입력하세요" required>
+                        <small id="passwordMatch" style="display: block; margin-top: 8px;"></small>
+                    </div>
+
+                    <!-- 정보 박스 -->
+                    <div class="info-box">
+                        <h5>⚠️ 비밀번호 요구사항</h5>
+                        <ul style="margin: 0; padding-left: 20px;">
+                            <li>최소 8자 이상</li>
+                            <li>영문, 숫자, 특수문자 포함</li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+
+            <div class="popup-footer">
+                <button type="button" class="rust-btn" onclick="closePopup('popup-basic')">취소</button>
+                <button type="submit" form="signupForm" class="rust-btn rust-btn-orange">회원가입</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
