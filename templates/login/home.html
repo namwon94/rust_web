@@ -8,13 +8,15 @@
 </head>
 <body class="login-page">
     <script src="/js/app.js"></script>
+    <script src="/js/registration.js"></script>
     <div class="container">
         <header>
             <h1>🦀 로그인</h1>
             {% if message != "" %}
             <p class="subtitle">{{message}}</p>
-            {% endif %}
+            {% else %}
             <p class="subtitle">Rust Web Application</p>
+            {% endif %}
         </header>
 
         <!-- <form class="login-form" onsubmit="handleLogin(event)" action="/login" method="post"> -->
