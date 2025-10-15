@@ -8,13 +8,16 @@ use actix_web::{
 };
 use actix_web_flash_messages::FlashMessage;
 use sqlx::PgPool;
-//use actix_web_flash_messages::FlashMessage;
 //anyhow의 확장 트레이트를 스코프 안으로 가져온다.
 use anyhow::{
     anyhow, Context
 };
 use askama::Template;
 use uuid::Uuid;
+use argon2::password_hash::SaltString;
+use argon2::{Argon2, Algorithm, Params, PasswordHasher, Version};
+use secrecy::Secret;
+use secrecy::ExposeSecret;
 
 #[derive(serde::Deserialize)]
 pub struct FormData {
@@ -87,30 +90,6 @@ async fn login_process(
     Ok(row)
 }
 
-// #[derive(Template)]
-// #[template(path = "login/redirect.html")]
-// struct LoginRedirect {
-//     error_message: String,
-// }
-
-// fn login_redirect(e: LoginError) -> InternalError<LoginError> {
-    
-//     let template = LoginRedirect {
-//         error_message: e.to_string()
-//     };
-//     //?를 사용할려면 반환 타입이 Result 혹은 Option 이어야 하는데 아니기 때문에 사용을 못한다. 그래서 macth로 명시적 에러처리를 했음.
-//     let rendered = match template.render() {
-//         Ok(s) => s,
-//         Err(e) => {
-//             let err = LoginError::TemplateError(e.into());
-//             return InternalError::from_response(err, HttpResponse::InternalServerError().finish())
-//         }
-//     };
-//     //FlashMessage::error(e.to_string()).send();
-//     let response = HttpResponse::Ok().content_type(ContentType::html()).body(rendered);
-
-//     InternalError::from_response(e, response)
-// }
 fn login_redirect(e: LoginError) -> InternalError<LoginError> {
     FlashMessage::error(e.to_string()).send();
     let response = HttpResponse::SeeOther()
@@ -136,6 +115,19 @@ pub async fn logout() -> Result<HttpResponse> {
     })?;
 
     Ok(HttpResponse::Ok().content_type(ContentType::html()).body(rendered))
+}
+
+pub fn hash_password(
+    password: &Secret<String>,
+) -> Result<String, anyhow::Error> {
+    let salt = SaltString::generate(&mut rand::thread_rng());
+    let password_hash = Argon2::new(
+        Algorithm::Argon2id,
+        Version::V0x13,
+        Params::new(15000, 2, 1, None).unwrap()
+    )
+    .hash_password(password.expose_secret().as_bytes(), &salt)?.to_string();
+    Ok(password_hash)
 }
 
 //#[derive(thiserror::Error)] : rust 표준 라이브러리의 std::error::Error트레이트 구현을 자동화한다.

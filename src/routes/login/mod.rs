@@ -1,6 +1,9 @@
-mod form;
-mod login_process;
+mod home;
+mod process;
+mod registration;
 
-pub use form::home;
-pub use login_process::login;
-pub use login_process::logout;
+pub use home::home;
+pub use process::login;
+pub use process::logout;
+pub use registration::registration;
+pub use registration::register;
