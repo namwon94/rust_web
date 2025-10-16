@@ -1,10 +1,14 @@
-use actix_web::{HttpResponse, Result, http::header::ContentType, web};
+use actix_web::{error::InternalError, http::header::ContentType, web, HttpResponse, Result};
 use actix_web_flash_messages::IncomingFlashMessages;
 use askama::Template; 
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use secrecy::Secret;
-use crate::routes::login::process::hash_password;
+use crate::routes::login::process::{
+    hash_password,
+    login_redirect
+};
+use crate::error::ApiError;
 
 #[derive(Debug, Deserialize)]
 pub struct RegisterRequest {
@@ -53,23 +57,18 @@ pub async fn registration(flash_message: IncomingFlashMessages) -> Result<HttpRe
 pub async fn register(
     form: web::Json<RegisterRequest>,
     pool: web::Data<PgPool>,
-) -> HttpResponse {
-    let password_hash = match hash_password(&form.password) {
-        Ok(hash) => hash,
-        Err(_) => {
-            return HttpResponse::InternalServerError().json(RegisterResponse{
-                success: false,
-                message: "비밀번호 처리 중 에러 발생".to_string()
-            });
-        }
-    };
+) -> Result<HttpResponse, InternalError<ApiError>> {
+    let password_hash = hash_password(&form.password).map_err(|e| 
+        login_redirect(ApiError::from(e))
+    )?;
 
-    match insert_user(&pool, &form.email, &form.name, &form.nickname, &password_hash).await {
-        Ok(_) => HttpResponse::Ok().json(RegisterResponse {
+    insert_user(&pool, &form.email, &form.name, &form.nickname, &password_hash)
+        .await
+        .map(|_| HttpResponse::Ok().json(RegisterResponse {
             success: true,
             message: "회원 가입 성공".to_string()
-        }),
-        Err(e) => {
+        }))
+        .map_err(|e| {
             tracing::error!("유저 회원가입 실패 : {:?}", e);
 
             let error_message = if e.to_string().contains("duplicate") {
@@ -78,12 +77,14 @@ pub async fn register(
                 "회원 가입 중 오류 발생했습니다."
             };
 
-            HttpResponse::BadRequest().json(RegisterResponse {
-                success: false,
-                message: error_message.to_string(),
-            })
-        }
-    }
+            InternalError::from_response(
+                ApiError::from(e), HttpResponse::Ok().json(
+                    RegisterResponse {
+                    success: false,
+                    message: error_message.to_string(),
+                })
+            )
+        })
 }
 
 async fn insert_user(

@@ -15,7 +15,7 @@ match arms / ✅ 같은 타입이면 OK                    ❌ 각각 다른 불
 예외 continue와 !(never type)의 특별 한 경우
     -> continue의 타입은 !(never. type) !의 의미는 "이 코드는 절대 반환하지 않음"을 의미 !는 모든 타입으로 강제 변환(coercion) 가능
 
-
+//20251001
 Rust의 Actix-web에서 정적 파일 라우트를 동적 라우트보다 먼저 등록해야 하는 이유는 라우트 매칭 순서 때문입니다.
 핵심 이유
 Actix-web은 등록된 순서대로 라우트를 매칭합니다. 먼저 등록된 라우트가 요청과 일치하면, 그 즉시 해당 핸들러를 실행하고 이후 라우트는 확인하지 않습니다.
@@ -26,6 +26,7 @@ Actix-web은 등록된 순서대로 라우트를 매칭합니다. 먼저 등록�
 3) Catch-all(default_service)은 항상 마지막
 이렇게 하면 /css/style.css는 정적 파일 서비스가 처리하고, /tracing_basic은 동적 핸들러가 처리하며, 그 외는 404 핸들러가 처리합니다.
 
+//20251015
 현재 웹 개발 트렌드
 1. SPA (Single Page Application) 방식이 주류
 React, Vue, Svelte 등으로 화면 전환
@@ -54,6 +55,7 @@ SPA 방식에서 컴포넌트는 UI뿐 아니라 해당 영역의 로직, 상태
 /api 접두사를 사용하는 이유
 1. 명확한 구분 : 어떤 엔드포인트가 HTML을 반환하고, 어떤 것이 JSON을 반환하는지 명확함
 2. 미들웨어 적용 쳔리
+-------------------------------
 
 fetch_optional(pool)
 쿼리를 실행해서 0개 또는 1개의 결과 행(row)을 가져옵니다.
@@ -73,4 +75,21 @@ execute(pool)
 
 결과 행 데이터를 가져오지 않고, 영향을 준 행 수 등에만 관심 있을 때 쓰입니다.
 
+//20251016
+반환 타입 비교
+login - Result<HttpResponse, InternalError<LoginError>>
 
+에러를 명시적으로 처리하도록 강제
+Actix-web의 에러 핸들링 시스템과 통합
+
+register - HttpResponse
+
+모든 경우를 함수 내에서 처리해서 항상 HttpResponse 반환
+함수 내에서 에러 처리 로직이 노출됨
+
+어느 것이 더 좋은가?
+login 방식이 더 좋습니다. 이유는:
+1. 관심사의 분리 - login 방식은 비즈니스 로직과 HTTP 응답 처리를 분리합니다. 핸들러 함수는 비즈니스 로직에만 집중하고, 에러를 Result로 반환하면 Actix-web의 에러 핸들러(impl ResponseError)가 HTTP 응답으로 변환하도록 위임합니다.
+2. 재사용성 - 같은 로직을 gRPC, GraphQL 등 다른 프로토콜에서도 재사용할 수 있습니다. register 방식은 HTTP에 완전히 종속되어 있습니다.
+3. 테스트 용이성 - 에러 타입이 명시적이어서 단위 테스트가 간단합니다.
+4. 일관성 - Rust와 Actix-web 커뮤니티의 관례입니다.

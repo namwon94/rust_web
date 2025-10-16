@@ -137,9 +137,13 @@ async function handleSignup(event) {
         });
         
         const result = await response.json();
-
-        
-        window.location.href = '/home';
+        console.log('result.success : ,',result.success,' result.message :',result.message);
+        if(result.success) {
+            alert(result.message);
+            window.location.href = '/home';
+        }else {
+            alert(result.message);
+        }
     } catch (error) {
         alert('회원가입 중 오류가 발생했습니다.');
     }

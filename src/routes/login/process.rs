@@ -18,6 +18,7 @@ use argon2::password_hash::SaltString;
 use argon2::{Argon2, Algorithm, Params, PasswordHasher, Version};
 use secrecy::Secret;
 use secrecy::ExposeSecret;
+use crate::error::ApiError;
 
 #[derive(serde::Deserialize)]
 pub struct FormData {
@@ -39,7 +40,7 @@ struct LoginProcess<'a> {
 pub async fn login(
     form: web::Form<FormData>,
     pool: web::Data<PgPool>,
-) -> Result<HttpResponse, InternalError<LoginError>> {
+) -> Result<HttpResponse, InternalError<ApiError>> {
     let username = form.0.username;
 
     match login_process(&username, &pool).await {
@@ -49,18 +50,16 @@ pub async fn login(
             };
             //FromResidual 트레이트 : FromResidual 트레이트가 ? 연산자를 사용할 때 중요한 역할을 하는 트레이트이다. 에러 전파 또는 잔여(residual) 값을 상위 함수의 반환 타입으로 변환하는 방식을 정의
             let rendered = template.render().map_err(|e| {
-                let e = LoginError::TemplateError(e.into());
-                login_redirect(e)
+                login_redirect(ApiError::from(e))
             })?;
             Ok(HttpResponse::Ok().content_type(ContentType::html()).body(rendered))
         }
         Ok(None) => {
-            let e = LoginError::AuthError(anyhow!("No such user").into());
+            let e = ApiError::AuthError(anyhow!("No such user").into());
             Err(login_redirect(e))
         }
         Err(e) => { 
-            let e = LoginError::AuthError(e.into());
-            Err(login_redirect(e))
+            Err(login_redirect(ApiError::from(e)))
         }
     }
 }
@@ -90,7 +89,7 @@ async fn login_process(
     Ok(row)
 }
 
-fn login_redirect(e: LoginError) -> InternalError<LoginError> {
+pub fn login_redirect(e: ApiError) -> InternalError<ApiError> {
     FlashMessage::error(e.to_string()).send();
     let response = HttpResponse::SeeOther()
         .insert_header((LOCATION, "/home"))
@@ -128,35 +127,4 @@ pub fn hash_password(
     )
     .hash_password(password.expose_secret().as_bytes(), &salt)?.to_string();
     Ok(password_hash)
-}
-
-//#[derive(thiserror::Error)] : rust 표준 라이브러리의 std::error::Error트레이트 구현을 자동화한다.
-#[derive(thiserror::Error)]
-pub enum LoginError {
-    #[error("Authentication failed")]
-    AuthError(#[source] anyhow::Error),
-    #[error("Something went wrong")]
-    UnexpectError(#[from] anyhow::Error),
-    #[error("Template rendering error")]
-    TemplateError(#[from] askama::Error),
-}
-
-impl std::fmt::Debug for LoginError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        error_chain_fmt(self, f)
-    }
-}
-
-//std::error::Error의 source체인을 따라가면 원인(서브에러)까지 모두 출력한다.
- pub fn error_chain_fmt(
-    e: &impl std::error::Error,
-    f: &mut std::fmt::Formatter<'_>
-) -> std::fmt::Result {
-    writeln!(f, "{}\n", e)?;
-    let mut current = e.source();
-    while let Some(cause) = current {
-        writeln!(f, "Caused by:\n\t{}", cause)?;
-        current = cause.source();
-    }
-    Ok(())
 }
