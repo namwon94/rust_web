@@ -3,10 +3,14 @@
 pub enum ApiError {
     #[error("Authentication failed")]
     AuthError(#[source] anyhow::Error),
+    #[error("Invalid Password.")]
+    InvalidCredentials(#[source] anyhow::Error),
     #[error("Something went wrong")]
     UnexpectError(#[from] anyhow::Error),
     #[error("Template rendering error")]
     TemplateError(#[from] askama::Error),
+    #[error("JoinHandle error")]
+    JoinError(#[from] tokio::task::JoinError),
 }
 
 impl std::fmt::Debug for ApiError {

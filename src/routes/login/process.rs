@@ -12,25 +12,28 @@ use sqlx::PgPool;
 use anyhow::{
     anyhow, Context
 };
+use serde::Deserialize;
 use askama::Template;
-use uuid::Uuid;
+//use uuid::Uuid;
 use argon2::password_hash::SaltString;
-use argon2::{Argon2, Algorithm, Params, PasswordHasher, Version};
+use argon2::{Argon2, PasswordHash, PasswordVerifier, Algorithm, Params, PasswordHasher, Version};
 use secrecy::Secret;
 use secrecy::ExposeSecret;
 use crate::error::ApiError;
+use crate::telemetry::spawn_blocking_with_tracing;
 
-#[derive(serde::Deserialize)]
-pub struct FormData {
-    username: String,
+#[derive(Debug, Deserialize)]
+pub struct LogInRequest {
+    email: String,
+    password: Secret<String>,
 }
 
 #[derive(Template)]
 #[template(path = "login/success.html")]
-struct LoginProcess<'a> {
-    id: Uuid,
-    username: String,
-    cntn: Option<&'a str>,
+struct LogInResponse {
+    email: String,
+    name: String,
+    nickname: String,
 }
 
 #[tracing::instrument(
@@ -38,20 +41,28 @@ struct LoginProcess<'a> {
     fields(username=tracing::field::Empty, id=tracing::field::Empty)
 )]
 pub async fn login(
-    form: web::Form<FormData>,
+    form: web::Json<LogInRequest>,
     pool: web::Data<PgPool>,
 ) -> Result<HttpResponse, InternalError<ApiError>> {
-    let username = form.0.username;
+    let email = form.0.email;
+    let expected_password = form.0.password;
 
-    match login_process(&username, &pool).await {
-        Ok(Some((id, username, cntn))) => {
-            let template = LoginProcess {
-                id, username, cntn: cntn.as_deref()
+    match login_process(&email, &pool).await {
+        Ok(Some((email, name, nickname, password_hash))) => {
+            spawn_blocking_with_tracing(move || {
+                verify_password_hash(password_hash, expected_password)
+            })
+            .await
+            .map_err(|e| login_redirect(ApiError::from(e)))?
+            .map_err(|e| login_redirect(e))?;
+            let template = LogInResponse {
+                email, name, nickname
             };
             //FromResidual 트레이트 : FromResidual 트레이트가 ? 연산자를 사용할 때 중요한 역할을 하는 트레이트이다. 에러 전파 또는 잔여(residual) 값을 상위 함수의 반환 타입으로 변환하는 방식을 정의
             let rendered = template.render().map_err(|e| {
                 login_redirect(ApiError::from(e))
             })?;
+            //서버가 HTML문자열을 응답 본문에 담아서 보내는 구문
             Ok(HttpResponse::Ok().content_type(ContentType::html()).body(rendered))
         }
         Ok(None) => {
@@ -69,22 +80,22 @@ cntn 반환타입이 Option<String>인 이유는 해당 컬럼이 Null값을 허
 */
 #[tracing::instrument(name="Login Process", skip(pool))]
 async fn login_process(
-    username: &String,
+    email: &String,
     pool: &PgPool
-) -> Result<Option<(uuid::Uuid, String, Option<String>)>, anyhow::Error> {
-    tracing::debug!("username : {}", username);
+) -> Result<Option<(String, String, String, Secret<String>)>, anyhow::Error> {
+    tracing::debug!("email : {}", email);
     let row: Option<_> = sqlx::query!(
         r#"
-        SELECT id, name AS username, cntn
-        FROM test_table
-        WHERE name = $1
+        SELECT email, name, nickname, password_hash
+        FROM users
+        WHERE email = $1
         "#,
-        username
+        email
     )
     .fetch_optional(pool)
     .await
     .context("Failed to perform a query")?
-    .map(|row| (row.id, row.username, row.cntn));
+    .map(|row| (row.email, row.name, row.nickname, Secret::new(row.password_hash)));
     
     Ok(row)
 }
@@ -100,13 +111,13 @@ pub fn login_redirect(e: ApiError) -> InternalError<ApiError> {
 
 #[derive(Template)]
 #[template(path = "login/home.html")]
-struct LoginOut {
+struct LogOutResponse {
     message: String
 }
 
 pub async fn logout() -> Result<HttpResponse> {
     let message = String::new();
-    let template = LoginOut{
+    let template = LogOutResponse{
         message,
     };
     let rendered = template.render().map_err(|e| {
@@ -127,4 +138,23 @@ pub fn hash_password(
     )
     .hash_password(password.expose_secret().as_bytes(), &salt)?.to_string();
     Ok(password_hash)
+}
+
+#[tracing::instrument(
+    name = "Verify password hash",
+    skip(password_hash)
+)]
+fn verify_password_hash(
+    password_hash: Secret<String>,
+    expected_password: Secret<String>
+) -> Result<(), ApiError> {
+    let password_hash = PasswordHash::new(
+        password_hash.expose_secret()
+    )
+    .context("Failed to parse hash in PHC string format")?;
+
+    Argon2::default()
+        .verify_password(expected_password.expose_secret().as_bytes(), &password_hash)
+        .context("Invalid password")
+        .map_err(ApiError::InvalidCredentials)
 }

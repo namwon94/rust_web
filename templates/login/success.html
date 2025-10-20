@@ -6,12 +6,10 @@
     </head>
     <body>
         <form method="post">
-            <input type="hidden" id="id" name="id" value="{{id}}" />
+            <input type="hidden" id="email" name="email" value="{{email}}" />
+            <input type="hidden" id="name" name="name" value="{{name}}" />
         </form>
-        <p>Welcome {{username}}</p>
-        {%if cntn.is_some()%}
-        <p>{{cntn.unwrap()}}</p>
-        {%endif%}
+        <p>Welcome {{nickname}}</p>
         <p>Availavle actions</p>
         <div>
             <form name="logoutForm" action="/logout" method="post">

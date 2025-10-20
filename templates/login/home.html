@@ -8,13 +8,19 @@
 </head>
 <body class="login-page">
     <script src="/js/app.js"></script>
+    <script src="/js/process_login.js"></script>
     <div class="container">
         <header>
             <h1>🦀 로그인</h1>
             <p class="subtitle">Rust Web Application</p>
             {% if message != "" %}
             <script>
+                console.log('Message:', '{{message|escape}}');
                 alert('{{message|escape}}');
+            </script>
+            {% else %}
+            <script>
+                console.log('Message is empty');
             </script>
             {% endif %}
         </header>

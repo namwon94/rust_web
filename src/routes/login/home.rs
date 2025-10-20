@@ -11,8 +11,10 @@ struct HomeTemplate{
 pub async fn home(flash_message: IncomingFlashMessages) -> Result<HttpResponse> {
     let mut message = String::new();
     for m in flash_message.iter() {
+        println!("Flash message received: {}", m.content());
         message = m.content().to_string();
     }
+    println!("message : {}",message);
     let template = HomeTemplate{
         message,
     };

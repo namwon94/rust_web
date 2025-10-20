@@ -9,7 +9,7 @@ use tracing_subscriber::{
     EnvFilter 
 };
 use tracing_log::LogTracer;
-//use tokio::task::JoinHandle;
+use tokio::task::JoinHandle;
 //BunyanFormattingLayer는 많은 메타데이터 필드를 포함하여 출력한다. 
 //use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
 
@@ -132,4 +132,14 @@ pub fn init_subscriber(subscriber: impl Subscriber + Send + Sync) {
     LogTracer::init().expect("Failed to set logger");
     //애플리케이션에서 'set_global_default'를 사용해서 span을 처리하기 위해 어떤 subscriber를 사용해야 하는지 지정할 수 있다.
     set_global_default(subscriber).expect("Failed to set subscriber");
+}
+
+pub fn spawn_blocking_with_tracing<F, R>(f: F) -> JoinHandle<R>
+where
+    F: FnOnce() -> R + Send + 'static,
+    R: Send + 'static
+{
+    //이것이 실행된 뒤 새운 스레드를 실행한다. 그 뒤 스레드의 소유권을 클로저에 전달하고, 그 스코프 안에서 명시적으로 모든 계산을 실행한다
+    let current_span = tracing::Span::current();
+    tokio::task::spawn_blocking(move || current_span.in_scope(f))
 }

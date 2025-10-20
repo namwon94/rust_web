@@ -55,15 +55,3 @@ document.querySelectorAll('.popup-overlay').forEach(overlay => {
         }
     });
 });
-
-//로그인 시도
-function handleLogin(event) {
-    event.preventDefault();
-    
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const remember = document.getElementById('remember').checked;
-    
-    console.log('로그인 시도:', { email, remember });
-    alert('로그인 기능은 백엔드 연결이 필요합니다.');
-}
