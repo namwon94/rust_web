@@ -126,7 +126,7 @@ async function handleSignup(event) {
         password: password
     };
     
-    console.log('회원가입 데이터:', formData);
+    //console.log('회원가입 데이터:', formData);
     
     try {
         // 실제 API 호출
@@ -137,7 +137,7 @@ async function handleSignup(event) {
         });
         
         const result = await response.json();
-        console.log('result.success : ,',result.success,' result.message :',result.message);
+        //console.log('result.success : ,',result.success,' result.message :',result.message);
         if(result.success) {
             alert(result.message);
             window.location.href = '/home';
@@ -145,6 +145,6 @@ async function handleSignup(event) {
             alert(result.message);
         }
     } catch (error) {
-        alert('회원가입 중 오류가 발생했습니다.');
+        alert('서버와 연결할 수 없습니다.');
     }
 }

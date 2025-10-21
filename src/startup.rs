@@ -19,7 +19,7 @@ use tracing_actix_web::TracingLogger;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::routes::{
-    contents, home, login, logout, register, registration 
+    contents, home, login, logout, register, registration
 };
 use askama::Template;
 

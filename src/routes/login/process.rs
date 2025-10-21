@@ -2,11 +2,11 @@ use actix_web::{
     error::InternalError,
     HttpResponse,
     http::header::ContentType,
-    http::header::LOCATION,
+    //http::header::LOCATION,
     web,
     Result,
 };
-use actix_web_flash_messages::FlashMessage;
+//use actix_web_flash_messages::FlashMessage;
 use sqlx::PgPool;
 //anyhow의 확장 트레이트를 스코프 안으로 가져온다.
 use anyhow::{
@@ -101,25 +101,20 @@ async fn login_process(
 }
 
 pub fn login_redirect(e: ApiError) -> InternalError<ApiError> {
-    FlashMessage::error(e.to_string()).send();
-    let response = HttpResponse::SeeOther()
-        .insert_header((LOCATION, "/home"))
-        .finish();
-
+    let response = HttpResponse::Unauthorized()
+        .json(serde_json::json!({
+            "error": e.to_string(),
+            "redirect": "/home"
+        }));
     InternalError::from_response(e, response)
 }
 
 #[derive(Template)]
 #[template(path = "login/home.html")]
-struct LogOutResponse {
-    message: String
-}
+struct LogOutResponse;
 
 pub async fn logout() -> Result<HttpResponse> {
-    let message = String::new();
-    let template = LogOutResponse{
-        message,
-    };
+    let template = LogOutResponse;
     let rendered = template.render().map_err(|e| {
         actix_web::error::ErrorInternalServerError(e)
     })?;
@@ -155,6 +150,6 @@ fn verify_password_hash(
 
     Argon2::default()
         .verify_password(expected_password.expose_secret().as_bytes(), &password_hash)
-        .context("Invalid password")
+        .context("Invalid password. Please Enter Your Password Correctly.")
         .map_err(ApiError::InvalidCredentials)
 }

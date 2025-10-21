@@ -1,3 +1,4 @@
+use argon2::{password_hash::SaltString, Algorithm, Argon2, Params, Version, PasswordHasher};
 use once_cell::sync::Lazy;
 use rust_web::{
     configuration::{get_configuration, DatabaseSettings}, 
@@ -91,7 +92,7 @@ impl TestApp {
     where 
         Body: serde::Serialize, {
             self.api_client
-                .post(&format!("{}/login", &self.address))
+                .post(&format!("{}/api/login", &self.address))
                 .form(body)
                 .send()
                 .await
@@ -100,7 +101,7 @@ impl TestApp {
     //로그인 페이지 HTML 가져오기 / UI테스트나 CSRF토큰 추출 시 사용
     pub async fn get_login_html(&self) -> String {
         self.api_client
-            .get(&format!("{}/login", &self.address))
+            .get(&format!("{}/home", &self.address))
             .send()
             .await
             .expect("Failed to execute request.")
@@ -111,37 +112,50 @@ impl TestApp {
 }
 
 pub struct TestUser {
-    pub user_id: Uuid,
-    pub username: String,
-    pub cntn: String
+    pub email: String,
+    pub name: String,
+    pub password: String,
+    pub nickname: String
 }
 
 impl TestUser {
     //완전히 무작위 테스트 유저 생성 / UUID사용으로 충돌 없음 보장
     pub fn generate() -> Self {
         Self {
-            user_id: Uuid::new_v4(),
-            username: Uuid::new_v4().to_string(),
-            cntn: Uuid::new_v4().to_string()
+            email: Uuid::new_v4().to_string(),
+            name: Uuid::new_v4().to_string(),
+            password: Uuid::new_v4().to_string(),
+            nickname: Uuid::new_v4().to_string(),
         }
     }
     /* 
     pub async fn login(&self, app: &TestApp) {
         app.post_login(&serde_json::json!({
-            "username": &self.username,
-            "cntn": &self.cntn
+            "email": &self.email,
+            "password": &self.password,
         }))
         .await;
     }
     */
     //생성된 테스트 유저를 실제 DB에 저장
     async fn store(&self, pool: &PgPool) {
+        let salt = SaltString::generate(&mut rand::thread_rng());
+        let password_hash = Argon2::new(
+            Algorithm::Argon2id,
+            Version::V0x13,
+            Params::new(15000, 2, 1, None).unwrap()
+        )
+        .hash_password(self.password.as_bytes(), &salt)
+        .unwrap()
+        .to_string();
+
         sqlx::query!(
-            "INSERT INTO test_table (id, name, cntn, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5)",
-            self.user_id,
-            self.username,
-            self.cntn,
+            "INSERT INTO users (email, name, password_hash, nickname, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6)",
+            self.email,
+            self.name,
+            password_hash,
+            self.nickname,
             Utc::now(),
             Utc::now()
         )
