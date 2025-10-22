@@ -1,3 +1,5 @@
+use actix_session::storage::RedisSessionStore;
+use actix_session::SessionMiddleware;
 use actix_web::{
     web, App, HttpServer, HttpResponse,
     dev::Server,
@@ -38,7 +40,8 @@ impl Application {
         let listener = TcpListener::bind(&address)?;
         let port = listener.local_addr().unwrap().port();
         let server = run(
-            listener, connection_pool, configuration.application.base_url, configuration.application.hmac_secret
+            listener, connection_pool, configuration.application.base_url, configuration.application.hmac_secret,
+            configuration.redis_uri
         ).await?;
 
         Ok(Self{port, server})
@@ -59,13 +62,14 @@ impl Application {
 pub struct ApplicationBaseUrl(pub String);
 
 async fn run(
-    listener: TcpListener, db_pool: PgPool, base_url: String, hamc_secret: Secret<String>,
-) -> Result<Server, std::io::Error> {
+    listener: TcpListener, db_pool: PgPool, base_url: String, hamc_secret: Secret<String>, redis_uri: Secret<String>,
+) -> Result<Server, anyhow::Error> {
     let db_pool = web::Data::new(db_pool);
     let base_url = web::Data::new(ApplicationBaseUrl(base_url));
     let secret_key = Key::from(hamc_secret.expose_secret().as_bytes());
     let message_store = CookieMessageStore::builder(secret_key.clone()).build();
     let message_framework = FlashMessagesFramework::builder(message_store).build();
+    let redis_store = RedisSessionStore::new(redis_uri.expose_secret()).await?;
     /*
     HttpServer::new 클로저 내에서 App::new()를 만들고 미들웨어, 라우트, 공유 상태를 설정한다.
     클로저를 인자로 받아 실행 하는 이유
@@ -76,6 +80,7 @@ async fn run(
     let server = HttpServer::new(move || {
         App::new()
             .wrap(message_framework.clone())
+            .wrap(SessionMiddleware::new(redis_store.clone(), secret_key.clone()))
             //요청 로깅 미들웨어 추가
             .wrap(TracingLogger::default())
             //정적 파일

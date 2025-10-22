@@ -1,23 +1,41 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta http-equiv="content-type" content="text/html"; charset="utf-8">
-        <title>Welcome</title>
-    </head>
-    <body>
-        <form method="post">
-            <input type="hidden" id="email" name="email" value="{{email}}" />
-            <input type="hidden" id="name" name="name" value="{{name}}" />
-        </form>
-        <p>Welcome {{nickname}}</p>
-        <p>Availavle actions</p>
-        <div>
-            <form name="logoutForm" action="/logout" method="post">
-                <button type="submit">Login out</button>
-            </form>
-            <form name="tableOfContentsForm" action="/contents" method="post">
-                <button type="submit">목차 이동</button>
-            </form>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="welcome-page">
+    <div class="container">
+        <header>
+            <h1>Welcome</h1>
+            <p class="subtitle">Rust Learning Platform</p>
+        </header>
+
+        <div class="welcome-content">
+            <div class="welcome-message">
+                <p>환영합니다, <span class="user-nickname">{{nickname}}</span>님!</p>
+            </div>
+
+            <p class="actions-title">사용 가능한 작업</p>
+
+            <div class="actions-container">
+                <form name="tableOfContentsForm" action="/contents" method="post">
+                    <input type="hidden" id="email" name="email" value="{{email}}" />
+                    <input type="hidden" id="name" name="name" value="{{name}}" />
+                    <button type="submit" class="rust-btn rust-btn-orange">📚 목차 이동</button>
+                </form>
+
+                <form name="logoutForm" action="/logout" method="post">
+                    <button type="submit" class="rust-btn rust-btn-info">🚪 로그아웃</button>
+                </form>
+            </div>
         </div>
-    </body>
+
+        <footer>
+            <p>&copy; 2025 Rust Learning Platform. All rights reserved.</p>
+        </footer>
+    </div>
+</body>
 </html>

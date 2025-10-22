@@ -682,3 +682,80 @@ body.signup-page .container {
 .error-message:not(:empty) {
     display: block; /* 내용이 있으면 표시 */
 }
+
+/* ==================== Welcome 페이지 전용 스타일 ==================== */
+
+body.welcome-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body.welcome-page .container {
+    max-width: 600px;
+    width: 100%;
+}
+
+.welcome-content {
+    padding: 40px 50px;
+}
+
+.welcome-message {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.welcome-message p {
+    font-size: 1.3em;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+}
+
+.user-nickname {
+    color: var(--rust-orange);
+    font-weight: 600;
+    font-size: 1.4em;
+}
+
+.actions-title {
+    font-size: 1.2em;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    text-align: center;
+    font-weight: 500;
+}
+
+.actions-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.actions-container form {
+    width: 100%;
+}
+
+.actions-container .rust-btn {
+    width: 100%;
+}
+
+/* Welcome 페이지 반응형 */
+@media (max-width: 768px) {
+    body.welcome-page .welcome-content {
+        padding: 30px 25px;
+    }
+
+    .welcome-message p {
+        font-size: 1.1em;
+    }
+
+    .user-nickname {
+        font-size: 1.2em;
+    }
+}
+
+/* 애니메이션 - Welcome 콘텐츠용 */
+.welcome-content {
+    animation: fadeIn 0.5s ease-in-out;
+}
