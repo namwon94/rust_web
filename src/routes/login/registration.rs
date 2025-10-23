@@ -78,7 +78,7 @@ pub async fn register(
             };
 
             InternalError::from_response(
-                ApiError::from(e), HttpResponse::Ok().json(
+                ApiError::from(e), HttpResponse::BadRequest().json(
                     RegisterResponse {
                     success: false,
                     message: error_message.to_string(),

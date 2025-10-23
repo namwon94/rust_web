@@ -88,7 +88,28 @@ pub struct TestApp {
 
 impl TestApp {
     //로그인 엔드포인트에 POST 요청 / form() : URL-encoded 형식으로 전송
-    pub async fn post_login<Body>(&self, body: &Body) -> reqwest::Response
+    pub async fn post_login_json<Body>(&self, body: &Body) -> reqwest::Response
+    where 
+        Body: serde::Serialize, {
+            self.api_client
+                .post(&format!("{}/api/login", &self.address))
+                .json(body)
+                .send()
+                .await
+                .expect("Failed to execute request.")
+        }
+    pub async fn post_register<Body>(&self, body: &Body) -> reqwest::Response
+    where
+        Body: serde::Serialize, {
+            self.api_client
+                .post(&format!("{}/api/register", &self.address))
+                .json(body)
+                .send()
+                .await
+                .expect("Failed to execute request.")
+        }
+    /* 
+    pub async fn post_login_form<Body>(&self, body: &Body) -> reqwest::Response
     where 
         Body: serde::Serialize, {
             self.api_client
@@ -98,6 +119,7 @@ impl TestApp {
                 .await
                 .expect("Failed to execute request.")
         }
+    
     //로그인 페이지 HTML 가져오기 / UI테스트나 CSRF토큰 추출 시 사용
     pub async fn get_login_html(&self) -> String {
         self.api_client
@@ -109,6 +131,7 @@ impl TestApp {
             .await
             .unwrap()
     }
+    */
 }
 
 pub struct TestUser {
@@ -130,7 +153,7 @@ impl TestUser {
     }
     /* 
     pub async fn login(&self, app: &TestApp) {
-        app.post_login(&serde_json::json!({
+        app.post_login_form(&serde_json::json!({
             "email": &self.email,
             "password": &self.password,
         }))
@@ -165,10 +188,42 @@ impl TestUser {
     }
 }
 
-//작은 헬퍼 함수, 이번 창과 다음 창에서 이 확인을 여러 차례 수행한다.
+/*
 pub fn assert_is_redirect_to(response: &reqwest::Response, location: &str) {
     assert_eq!(response.status().as_u16(), 303);
     assert_eq!(response.headers().get("Location").unwrap(), location);
+}
+*/
+//작은 헬퍼 함수, 이번 창과 다음 창에서 이 확인을 여러 차례 수행한다.
+pub async fn assert_is_redirect(
+    response: reqwest::Response,
+    expected_status: u16,
+    redirect_location: &str
+) {
+    assert_eq!(response.status().as_u16(), expected_status);
+
+    let json_response: serde_json::Value = response.json().await.expect("Failed to parse response as JSON");
+    assert!(json_response["error"].is_string());
+    assert_eq!(json_response["redirect"], redirect_location);
+}
+
+pub async fn assert_is_message(
+    response: reqwest::Response,
+    expected_status: u16,
+) {
+    assert_eq!(response.status().as_u16(), expected_status);
+
+    let json_response: serde_json::Value = response.json().await.expect("Failed to parse response as JSON");
+    
+    assert_eq!(json_response["success"], false);
+    assert!(json_response["message"].is_string());
+
+    let message = json_response["message"].as_str().unwrap();
+    assert!(
+        message.contains("이미 사용중인 이메일"),
+        "Expected duplocate email error message, got : {}",
+        message
+    );
 }
 
 /*

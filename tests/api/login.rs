@@ -1,22 +1,39 @@
-use crate::helpers::{spawn_app, assert_is_redirect_to};
+use crate::helpers::{spawn_app, assert_is_redirect, assert_is_message};
 
 #[tokio::test]
-async fn an_error_flash_message_is_set_on_failure() {
+async fn login_try_wrong_data() {
     //Arrange
     let app = spawn_app().await;
 
     //Act
     let login_body = serde_json::json!({
-        "username": "random-username",
+        "email": "test@example.com",
         "password": "random-password"
     });
-    let response = app.post_login(&login_body).await;
+    let response = app.post_login_json(&login_body).await;
+    //println!("Status: {}", response.status());
+    //let body = response.text().await.unwrap();
+    //println!("Response body: {}", body);
 
-    //Assert
-    assert_is_redirect_to(&response, "/api/login");
-    //assert_eq!(flash_cookie.value(), "Authentication failed");
+    //panic!("Check the ouput above");
+    
+    assert_is_redirect(response, 401, "/home").await;
+}
 
-    //Act - Part 2 - 리다이렉트를 따른다.
-    let html_page = app.get_login_html().await;
-    assert!(html_page.contains("<p><i>Authentication failed</i></p>"));
+#[tokio::test]
+async fn an_register_same_email() {
+    //Arrange
+    let app = spawn_app().await;
+
+    //Act1 - 테스트 email, password 가져오기
+    let register_body = serde_json::json!({
+        "email": app.test_user.email,
+        "password": "random_password",
+        "name": "random_name",
+        "nickname": "random_nickname",
+    });
+    let response = app.post_register(&register_body).await;
+
+    assert_is_message(response, 400).await;
+    
 }
