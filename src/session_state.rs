@@ -20,7 +20,7 @@ impl TypedSession{
         self.0.get(Self::EMAIL_KEY)
     }
 
-    pub fn log_out(self) {
+    pub fn delete_email(self) {
         self.0.purge()
     }
 }
