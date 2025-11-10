@@ -359,3 +359,81 @@ pub struct LogInRequest {
 ---------------------------------------
 
 이것이 **프레임워크 레벨의 추상화**입니다. 개발자는 구조체만 정의하면, Actix-web와 Serde가 나머지를 자동으로 처리해줍니다!
+
+
+//20251026
+#[derive(Serialize, Deserialize)]
+struct AccessTokenClaims {
+    sub: String,        // 사용자 ID
+    exp: usize,         // 만료 시간 (15분 후)
+    token_type: String, // "access"
+}
+
+#[derive(Serialize, Deserialize)]
+struct RefreshTokenClaims {
+    sub: String,        // 사용자 ID
+    exp: usize,         // 만료 시간 (7일 후)
+    token_type: String, // "refresh"
+    jti: String,        // 토큰 고유 ID (Redis 키로 사용)
+}
+
+
+## 동작 흐름
+```
+1. 로그인 성공
+   → Access Token (15분) + Refresh Token (7일) 발급
+   → Refresh Token은 Redis에도 저장
+
+2. API 요청
+   → Access Token으로 인증
+
+3. Access Token 만료 (15분 후)
+   → 클라이언트가 Refresh Token으로 갱신 요청
+   → 서버가 Redis에서 Refresh Token 확인
+   → 새로운 Access Token 발급
+
+4. Refresh Token도 만료 (7일 후)
+   → 다시 로그인 필요
+-------------------------------------
+왜 2개를 사용하나?
+보안 강화:
+
+Access Token이 탈취되어도 15분 후 자동 무효화
+Refresh Token은 Redis에서 관리하므로 강제 로그아웃 가능 (세션의 장점 유지)
+
+사용자 경험:
+
+15분마다 재로그인할 필요 없음
+백그라운드에서 자동으로 토큰 갱신
+----------------------------------
+#################ex############################
+use jsonwebtoken::{encode, decode, Header, Validation, EncodingKey, DecodingKey, Algorithm};
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Claims {
+    sub: String,
+    exp: usize,
+}
+
+fn main() {
+    let my_claims = Claims {
+        sub: "user123".to_owned(),
+        exp: 10000000000,
+    };
+    
+    // 토큰 생성
+    let token = encode(
+        &Header::default(),
+        &my_claims,
+        &EncodingKey::from_secret("secret".as_ref())
+    ).unwrap();
+    
+    // 토큰 검증
+    let token_data = decode::<Claims>(
+        &token,
+        &DecodingKey::from_secret("secret".as_ref()),
+        &Validation::new(Algorithm::HS256)
+    ).unwrap();
+}
+######################################################

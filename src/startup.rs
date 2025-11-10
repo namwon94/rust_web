@@ -1,5 +1,9 @@
 use actix_session::storage::RedisSessionStore;
-use actix_session::SessionMiddleware;
+use actix_session::{
+    SessionMiddleware,
+    //config::PersistentSession
+};
+//use actix_web::cookie::time::Duration;
 use actix_web::{
     web, App, HttpServer, HttpResponse,
     dev::Server,
@@ -14,8 +18,6 @@ use secrecy::{
     ExposeSecret,
     Secret,
 };
-//use actix_session::SessionMiddleware;
-//use actix_session::storage::RedisSessionStore;
 use std::net::TcpListener;
 use tracing_actix_web::TracingLogger;
 use sqlx::{postgres::PgPoolOptions, PgPool};
@@ -80,7 +82,9 @@ async fn run(
     let server = HttpServer::new(move || {
         App::new()
             .wrap(message_framework.clone())
-            .wrap(SessionMiddleware::new(redis_store.clone(), secret_key.clone()))
+            .wrap(
+                SessionMiddleware::new(redis_store.clone(), secret_key.clone())
+            )
             //요청 로깅 미들웨어 추가
             .wrap(TracingLogger::default())
             //정적 파일
