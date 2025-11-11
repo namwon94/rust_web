@@ -1,9 +1,9 @@
-use actix_session::storage::RedisSessionStore;
 use actix_session::{
+    storage::RedisSessionStore,
     SessionMiddleware,
-    //config::PersistentSession
+    config::PersistentSession
 };
-//use actix_web::cookie::time::Duration;
+use actix_web::cookie::time::Duration;
 use actix_web::{
     web, App, HttpServer, HttpResponse,
     dev::Server,
@@ -23,7 +23,7 @@ use tracing_actix_web::TracingLogger;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::routes::{
-    contents, home, login, logout, register, registration
+    contents, home_session, validate_credentials, logout, register, registration
 };
 use askama::Template;
 
@@ -83,7 +83,12 @@ async fn run(
         App::new()
             .wrap(message_framework.clone())
             .wrap(
-                SessionMiddleware::new(redis_store.clone(), secret_key.clone())
+                //버전이 0.10이 되면서 빌더 패턴이 도입이 되었음. 그래서 SessionMiddlewareBuilder의 메서드로 옮겨짐.
+                SessionMiddleware::builder(redis_store.clone(), secret_key.clone())
+                        .session_lifecycle(
+                            PersistentSession::default().session_ttl(Duration::days(7))
+                        )
+                        .build()
             )
             //요청 로깅 미들웨어 추가
             .wrap(TracingLogger::default())
@@ -96,10 +101,10 @@ async fn run(
             //.route("/tracing_basic", web::get().to(tracing_basic))
             //404 처리
             .default_service(web::route().to(not_found))
-            .route("/home", web::get().to(home))
+            .route("/home_session", web::get().to(home_session))
             .route("/registration", web::get().to(registration))
             .route("/logout", web::post().to(logout))
-            .route("/api/login", web::post().to(login))
+            .route("/api/login_session", web::post().to(validate_credentials))
             .route("/api/register", web::post().to(register))
             //DB풀과 베이스 URL정보를 애플리케이션 상태에 추가한다.
             .app_data(db_pool.clone())

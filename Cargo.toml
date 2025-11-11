@@ -48,7 +48,7 @@ hex = "0.4"
 # actix_web에서 플래시 메시지를 다루는 프레임워크이며 장고의 메시지 프레임워크를 면밀하게 모델화한 것이다.
 actix-web-flash-messages = {version = "0.4", features = ["cookies"]}
 # 세션 관리 기능 제공 -> 레디스 백엔드
-actix-session = {version = "0.6", features = ["redis-rs-tls-session"]}
+actix-session = {version = "0.10", features = ["redis-session"]}
 # 빠른 릴리스 정책
 actix-web-lab = "0.16"
 # 사용자 정의 에러 타입을 쉽고 간편하게 정의하도록 도와주는 라이브러리
@@ -71,6 +71,9 @@ sha3 = "0.9"
 argon2 = {version = "0.4", features = ["std"]}
 # We need the 'std_rng' to get access to the PRNG we want (원하는 PRNG에 엑세스하려면 'std_rng'가 필요하다.)
 rand = {version = "0.8", features=["std_rng"]}
+#Jwt 토큰
+jsonwebtoken = "9"
+
 
 
 # 테이블과 유사한 toml 구문을 사용해서 킨 코드 행을 줄이자

@@ -9,7 +9,7 @@ use crate::routes::login::process::get_user_information;
 #[template(path = "login/home.html")]
 struct HomeTemplate;
 
-pub async fn home(
+pub async fn home_session(
     session: TypedSession,
     pool: web::Data<PgPool>
 ) -> Result<HttpResponse> {
@@ -23,6 +23,6 @@ pub async fn home(
     
         Ok(HttpResponse::Ok().content_type(ContentType::html()).body(rendered))
     }else {
-        get_user_information(email, &pool, session).await.map_err(|e| e.into())
+        get_user_information(&email, &pool).await.map_err(|e| e.into())
     }    
 }

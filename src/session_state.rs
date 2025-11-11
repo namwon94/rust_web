@@ -1,4 +1,4 @@
-use actix_session::{Session, SessionExt};
+use actix_session::{Session, SessionExt, SessionGetError, SessionInsertError};
 use actix_web::dev::Payload;
 use actix_web::{FromRequest, HttpRequest};
 use std::future::{Ready, ready};
@@ -12,11 +12,11 @@ impl TypedSession{
         self.0.renew()
     }
 
-    pub fn insert_email(&self, email: String) -> Result<(), serde_json::Error> {
+    pub fn insert_email(&self, email: String) -> Result<(), SessionInsertError> {
         self.0.insert(Self::EMAIL_KEY, email)
     }
 
-    pub fn get_email(&self) -> Result<Option<String>, serde_json::Error> {
+    pub fn get_email(&self) -> Result<Option<String>, SessionGetError> {
         self.0.get(Self::EMAIL_KEY)
     }
 
