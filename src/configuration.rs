@@ -13,6 +13,7 @@ pub struct Settings {
     pub database: DatabaseSettings,
     pub application: ApplicationSettings,
     pub redis_uri: Secret<String>,
+    pub jwt: JwtSettings,
 }
 
 #[derive(serde::Deserialize, Clone)]
@@ -34,6 +35,11 @@ pub struct DatabaseSettings {
     pub database_name: String,
     //커넥션의 암호화 요청 여부를 결정한다.
     pub require_ssl: bool,
+}
+
+#[derive(serde::Deserialize, Clone)]
+pub struct JwtSettings {
+    pub secret: String,
 }
 
 //PgConnections는 DB연결 시 주로 사용된다. without_db는 DB선택 없이 서버 연결 설정만 하고, with_db는 해당 DB까지 지정해주는 기능

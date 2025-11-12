@@ -39,14 +39,15 @@ pub struct LogInResponse {
     pub email: String,
     pub name: String,
     pub nickname: String,
+    pub access_token: Option<String>,
 }
 
 #[tracing::instrument(
-    name="Get User Information",
+    name="Get User Information Session",
     skip(email, pool),
-    fields(username=tracing::field::Empty, id=tracing::field::Empty)
+    fields(email=tracing::field::Empty, password=tracing::field::Empty)
 )]
-pub async fn get_user_information(
+pub async fn get_user_information_session(
     email: &str,
     pool: &PgPool,
 ) -> Result<HttpResponse, InternalError<ApiError>> {
@@ -54,7 +55,41 @@ pub async fn get_user_information(
         Ok(Some((email, name, nickname))) => {
             //템플릿 구조체로 데이터 저장
             let template = LogInResponse {
-                email, name, nickname
+                email, name, nickname, access_token: None
+            };
+            //FromResidual 트레이트 : FromResidual 트레이트가 ? 연산자를 사용할 때 중요한 역할을 하는 트레이트이다. 에러 전파 또는 잔여(residual) 값을 상위 함수의 반환 타입으로 변환하는 방식을 정의
+            let rendered = template.render().map_err(|e| {
+                login_redirect(ApiError::from(e))
+            })?;
+            //서버가 HTML문자열을 응답 본문에 담아서 보내는 구문
+            Ok(HttpResponse::Ok().content_type(ContentType::html()).body(rendered))
+        }
+        Ok(None) => {
+            let e = ApiError::AuthError(anyhow!("No such user").into());
+            Err(login_redirect(e))
+        }
+        Err(e) => { 
+            Err(login_redirect(ApiError::from(e)))
+        }
+    }
+}
+
+#[tracing::instrument(
+    name="Get User Information Jwt",
+    skip(email, pool),
+    fields(email=tracing::field::Empty, password=tracing::field::Empty)
+)]
+pub async fn get_user_information_jwt(
+    email: &str,
+    pool: &PgPool,
+    access_token: String,
+) -> Result<HttpResponse, InternalError<ApiError>> {
+    match user_info_query(email, &pool).await {
+        Ok(Some((email, name, nickname))) => {
+            println!("access_token : {}", access_token);
+            //템플릿 구조체로 데이터 저장
+            let template = LogInResponse {
+                email, name, nickname, access_token: Some(access_token)
             };
             //FromResidual 트레이트 : FromResidual 트레이트가 ? 연산자를 사용할 때 중요한 역할을 하는 트레이트이다. 에러 전파 또는 잔여(residual) 값을 상위 함수의 반환 타입으로 변환하는 방식을 정의
             let rendered = template.render().map_err(|e| {
@@ -95,6 +130,28 @@ async fn user_info_query(
     .context("Failed to perform a query")?
     .map(|row| (row.email, row.name, row.nickname));
     
+    Ok(row)
+}
+
+#[tracing::instrument(name="Validate Email Query")]
+pub async fn validate_email_query(
+    email: &str,
+    pool: &PgPool,
+) -> Result<Option<(String, Secret<String>)>, anyhow::Error> {
+    tracing::debug!("Email: {}", email);
+    let row: Option<_> = sqlx::query!(
+        r#"
+        SELECT email, password_hash
+        FROM users
+        WHERE email = $1
+        "#,
+        email
+    )
+    .fetch_optional(pool)
+    .await
+    .context("Failed to perform a query")?
+    .map(|row| (row.email, Secret::new(row.password_hash)));
+
     Ok(row)
 }
 

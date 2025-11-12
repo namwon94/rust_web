@@ -4,3 +4,6 @@ application:
 database:
   # New entry!
   require_ssl: false
+# jwt_secret
+jwt:
+  secret: "my_local_secret_key"

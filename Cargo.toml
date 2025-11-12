@@ -56,7 +56,7 @@ thiserror = "1"
 # We need to add the 'serde' feature
 uuid = {version = "1", features = ["v4", "serde"]}
 # Template 엔진
-askama = "0.14"
+askama = { version = "0.14", features = ["serde_json"] }
 reqwest = { version = "0.11", default-features = false, features = [
     "json",
     "rustls-tls",

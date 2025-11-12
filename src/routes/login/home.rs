@@ -3,7 +3,7 @@ use actix_web::{http::header::ContentType, web, HttpResponse, Result};
 use askama::Template;
 use sqlx::PgPool;
 use crate::session_state::TypedSession;
-use crate::routes::login::process::get_user_information;
+use crate::routes::login::process::get_user_information_session;
 
 #[derive(Template)]
 #[template(path = "login/home.html")]
@@ -23,6 +23,15 @@ pub async fn home_session(
     
         Ok(HttpResponse::Ok().content_type(ContentType::html()).body(rendered))
     }else {
-        get_user_information(&email, &pool).await.map_err(|e| e.into())
+        get_user_information_session(&email, &pool).await.map_err(|e| e.into())
     }    
+}
+
+pub async fn home_jwt() -> Result<HttpResponse> {
+    let template = HomeTemplate;
+    let rendered = template.render().map_err(|e| {
+        actix_web::error::ErrorInternalServerError(e)
+    })?;
+
+    Ok(HttpResponse::Ok().content_type(ContentType::html()).body(rendered))
 }

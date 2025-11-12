@@ -22,8 +22,9 @@ use std::net::TcpListener;
 use tracing_actix_web::TracingLogger;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use crate::configuration::{DatabaseSettings, Settings};
+use crate::jwt::JwtService;
 use crate::routes::{
-    contents, home_session, validate_credentials, logout, register, registration
+    contents, home_session, home_jwt, validate_session, validate_jwt, logout, register, registration
 };
 use askama::Template;
 
@@ -41,9 +42,10 @@ impl Application {
         //TCP 네트워크 서버를 구현할 때, 특정 IP주소와 포트로 들어오는 클라이언트의 TCP연결 요청을 받아들이고 대기하는 역할을 하는 표준 라이브러리의 구조체 이다.
         let listener = TcpListener::bind(&address)?;
         let port = listener.local_addr().unwrap().port();
+        let jwt_secret = JwtService::new(configuration.jwt.secret);
         let server = run(
             listener, connection_pool, configuration.application.base_url, configuration.application.hmac_secret,
-            configuration.redis_uri
+            configuration.redis_uri, jwt_secret,
         ).await?;
 
         Ok(Self{port, server})
@@ -64,7 +66,7 @@ impl Application {
 pub struct ApplicationBaseUrl(pub String);
 
 async fn run(
-    listener: TcpListener, db_pool: PgPool, base_url: String, hamc_secret: Secret<String>, redis_uri: Secret<String>,
+    listener: TcpListener, db_pool: PgPool, base_url: String, hamc_secret: Secret<String>, redis_uri: Secret<String>, jwt_secret: JwtService
 ) -> Result<Server, anyhow::Error> {
     let db_pool = web::Data::new(db_pool);
     let base_url = web::Data::new(ApplicationBaseUrl(base_url));
@@ -72,6 +74,7 @@ async fn run(
     let message_store = CookieMessageStore::builder(secret_key.clone()).build();
     let message_framework = FlashMessagesFramework::builder(message_store).build();
     let redis_store = RedisSessionStore::new(redis_uri.expose_secret()).await?;
+    let jwt_secret = web::Data::new(jwt_secret);
     /*
     HttpServer::new 클로저 내에서 App::new()를 만들고 미들웨어, 라우트, 공유 상태를 설정한다.
     클로저를 인자로 받아 실행 하는 이유
@@ -102,13 +105,19 @@ async fn run(
             //404 처리
             .default_service(web::route().to(not_found))
             .route("/home_session", web::get().to(home_session))
+            .route("/home_jwt", web::get().to(home_jwt))
             .route("/registration", web::get().to(registration))
             .route("/logout", web::post().to(logout))
-            .route("/api/login_session", web::post().to(validate_credentials))
+            .route("/api/login_session", web::post().to(validate_session))
+            .route("/api/login_jwt", web::post().to(validate_jwt))
             .route("/api/register", web::post().to(register))
-            //DB풀과 베이스 URL정보를 애플리케이션 상태에 추가한다.
+            /*
+            DB풀과 베이스 URL정보를 애플리케이션 상태에 추가한다.
+            Actix Web에서 애플리케이션 전역 상태를 주입하는 메서드이다.
+             */
             .app_data(db_pool.clone())
             .app_data(base_url.clone())
+            .app_data(jwt_secret.clone())
     })
     .listen(listener)?
     .run();
