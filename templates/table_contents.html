@@ -7,7 +7,8 @@
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-    <script src="/js/app.js"></script>
+    <script src="/js/common/app.js"></script>
+    <script src="/js/common/notification.js"></script>
     <div class="container">
         <header>
             <h1>🦀 Rust 학습 문서</h1>
@@ -102,7 +103,7 @@
                         </a>
                     </li> -->
                     <li>
-                        <a href="/home_jwt" target="_blank" rel="noopener noreferrer">
+                        <a href="#" onclick="navigateToHomeJwt(event)">
                             <span class="toc-number">2.1</span>
                             <span class="toc-title">홈페이지 이동</span>
                         </a>
@@ -115,6 +116,35 @@
             <!-- <p>마지막 업데이트: 2025년 9월 30일</p> -->
         </footer>
     </div>
+    <script>
+        async function navigateToHomeJwt(event) {
+            event.preventDefault();
+            
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                // 토큰 없으면 로그인 페이지로
+                window.location.href = '/home_jwt';
+                return;
+            }
+            
+            const response = await fetch('/home_jwt', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.ok) {
+                const html = await response.text();
+                document.open();
+                document.write(html);
+                document.close();
+            } else {
+                alert('토큰 만료');
+                window.location.href = '/home_jwt';
+            }
+        }
+    </script>
     <!-- 팝업 컨테이너 -->
      <div id="popup-basic" class="popup-wrapper"></div>
 </body>

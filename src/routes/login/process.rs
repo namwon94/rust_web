@@ -86,7 +86,7 @@ pub async fn get_user_information_jwt(
 ) -> Result<HttpResponse, InternalError<ApiError>> {
     match user_info_query(email, &pool).await {
         Ok(Some((email, name, nickname))) => {
-            println!("access_token : {}", access_token);
+            //println!("access_token : {}", access_token);
             //템플릿 구조체로 데이터 저장
             let template = LogInResponse {
                 email, name, nickname, access_token: Some(access_token)

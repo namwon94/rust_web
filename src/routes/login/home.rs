@@ -1,9 +1,16 @@
+use actix_web::HttpRequest;
 use actix_web::{http::header::ContentType, web, HttpResponse, Result};
 //use actix_web_flash_messages::IncomingFlashMessages;
 use askama::Template;
 use sqlx::PgPool;
-use crate::session_state::TypedSession;
-use crate::routes::login::process::get_user_information_session;
+use crate::error::{e401, e500};
+use crate::routes::login::process::get_user_information_jwt;
+use crate::{
+    jwt::JwtService,
+    session_state::TypedSession,
+    routes::login::process::get_user_information_session,
+    error::ApiError
+};
 
 #[derive(Template)]
 #[template(path = "login/home.html")]
@@ -18,7 +25,7 @@ pub async fn home_session(
     if email.is_empty() {
         let template = HomeTemplate;
         let rendered = template.render().map_err(|e| {
-            actix_web::error::ErrorInternalServerError(e)
+            e500(ApiError::InternalServerError(format!("InternalServerError : {}", e)))
         })?;
     
         Ok(HttpResponse::Ok().content_type(ContentType::html()).body(rendered))
@@ -27,11 +34,27 @@ pub async fn home_session(
     }    
 }
 
-pub async fn home_jwt() -> Result<HttpResponse> {
-    let template = HomeTemplate;
-    let rendered = template.render().map_err(|e| {
-        actix_web::error::ErrorInternalServerError(e)
-    })?;
+pub async fn home_jwt(
+    //HttpRequest는 모든 핸들러에서 자동으로 주입되는 타입이다.
+    req: HttpRequest,
+    jwt_service: web::Data<JwtService>,
+    pool: web::Data<PgPool>
+) -> Result<HttpResponse> {
+    println!("jwt_service.extract_access_token(&req) : {:?}", jwt_service.extract_access_token(&req));
+    match jwt_service.extract_access_token(&req) {
+        Some(t) => {
+            let claims = jwt_service.verify_access_token(&t)
+                .map_err(|e| e401(ApiError::Unauthorized(format!("Invalid token : {}", e))))?;
+            println!("claims.email : {}", claims.email);
+            return get_user_information_jwt(&claims.email, &pool, t).await.map_err(|e| e.into())
+        },
+        None => {
+            let template = HomeTemplate;
+            let rendered = template.render().map_err(|e| {
+                e500(ApiError::InternalServerError(format!("InternalServerError : {}", e)))
+            })?;
 
-    Ok(HttpResponse::Ok().content_type(ContentType::html()).body(rendered))
+            return Ok(HttpResponse::Ok().content_type(ContentType::html()).body(rendered))
+        }
+    };
 }

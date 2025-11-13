@@ -14,6 +14,10 @@ pub enum ApiError {
     TemplateError(#[from] askama::Error),
     #[error("JoinHandle error")]
     JoinError(#[from] tokio::task::JoinError),
+    #[error("Unauthorized: {0}")]
+    Unauthorized(String),
+    #[error("InternalServerError: {0}")]
+    InternalServerError(String)
 }
 
 impl std::fmt::Debug for ApiError {
@@ -36,13 +40,6 @@ pub fn error_chain_fmt(
     Ok(())
 }
 
-//로깅을 위해 오류의 근본 원인은 유지한면서 불투명한 500을 반환한다.
-pub fn e500<T>(e: T) -> actix_web::Error
-where
-    T: std::fmt::Debug + std::fmt::Display + 'static {
-        actix_web::error::ErrorInternalServerError(e)
-    }
-
 pub fn see_other(location: &str) -> HttpResponse {
     HttpResponse::SeeOther().insert_header((LOCATION, location)).finish()
 }
@@ -52,4 +49,18 @@ pub fn e400<T>(e: T) -> actix_web::Error
 where 
     T: std::fmt::Debug + std::fmt::Display + 'static {
         actix_web::error::ErrorBadRequest(e)
+    }
+
+//401 Unauthorized를 반환(JWT 인증 실패 등)
+pub fn e401<T>(e: T) -> actix_web::Error
+where 
+    T: std::fmt::Debug + std::fmt::Display + 'static {
+        actix_web::error::ErrorUnauthorized(e)
+    }
+
+//로깅을 위해 오류의 근본 원인은 유지한면서 불투명한 500을 반환한다.
+pub fn e500<T>(e: T) -> actix_web::Error
+where
+    T: std::fmt::Debug + std::fmt::Display + 'static {
+        actix_web::error::ErrorInternalServerError(e)
     }

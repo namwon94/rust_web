@@ -1,7 +1,10 @@
 use actix_web::{
+    /* 
     dev::{
-        ServiceRequest, //ServiceResponse
+        ServiceRequest, ServiceResponse
     }, 
+    */
+    HttpRequest,
     //error::ErrorUnauthorized, 
     //Error,
     //HttpMessage
@@ -54,12 +57,15 @@ impl JwtService {
             iat: Utc::now().timestamp() as usize,
             role
         };
-        println!("sucess");
+        //println!("sucess");
         encode(&Header::default(), &claims, &EncodingKey::from_secret(self.secret.as_ref()))
     }
 
     //토큰 추출 함수
-    pub fn extract_access_token(req: &ServiceRequest) -> Option<String> {
+    pub fn extract_access_token(
+        &self, 
+        req: &HttpRequest
+    ) -> Option<String> {
         req.headers()
             .get("Authorization")?
             .to_str()
@@ -85,6 +91,7 @@ impl JwtService {
 }
 
 /* 
+//미들웨어에서 사용하는 jwt 인증
 pub async fn jwt_auth_middleware(
     secret: JwtService,
     req: ServiceRequest,

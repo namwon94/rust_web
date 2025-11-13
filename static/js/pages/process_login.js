@@ -83,22 +83,31 @@ async function jwtLogin(event) {
 
         //HTML문자열을 DOM으로 변환하여 브라우저가 랜더링
         //document.documentElement.innerHTML = html; -> 이걸로 html을 교체하면 <script>가 실행되지 않는다. (보안상의 이유)
+
+        // HTML 교체 전에 히스토리 업데이트
+        window.history.pushState({}, '', '/success');
+
         document.open();
         document.write(html);
         document.close();
-        /*
-        //jwt 토큰 받기
-        const data = await response.json();
-
-        //토큰을 localStorage에 저장
-        localStorage.setItem('access_token', data.access_token);
-        if (data.refresh_token) {
-            localStorage.setItem('refresh_toekn', data.refresh_token);
-        }
-        //console.log('data.access_token : ', data.access_token);
-        */
     }catch(error){
         console.error('Network Error : ', error);
         alert(error);
     }
 }
+
+// 뒤로가기 시 토큰으로 다시 로드
+window.addEventListener('popstate', async () => {
+    const token = localStorage.getItem('access_token');
+    if (token && window.location.pathname === '/success') {
+        const response = await fetch('/success', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            const html = await response.text();
+            document.open();
+            document.write(html);
+            document.close();
+        }
+    }
+});

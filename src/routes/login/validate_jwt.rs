@@ -44,7 +44,7 @@ pub async fn validate_jwt(
 
             //jwt 토큰 생성
             let access_token = jwt_service.create_access_token(&credentials.email, Some("admin".to_string())).expect("Failed to load jwt");
-            println!("access_token : {}", access_token);
+            //println!("access_token : {}", access_token);
             //async fn은 호출 즉시 실행되지 않고 Future를 반환한다. 실제로 실행하려면 .await가 필요하다.
             get_user_information_jwt(&credentials.email, &pool, access_token).await
         }
