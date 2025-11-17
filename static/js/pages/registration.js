@@ -140,7 +140,7 @@ async function handleSignup(event) {
         //console.log('result.success : ,',result.success,' result.message :',result.message);
         if(result.success) {
             alert(result.message);
-            window.location.href = '/home';
+            window.location.href = '/home_jwt';
         }else {
             alert(result.message);
         }

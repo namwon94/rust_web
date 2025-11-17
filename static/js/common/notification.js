@@ -22,6 +22,7 @@ async function loadUserInfo() {
 */
 //loadUserInfo();
 
+/*
 (() => {
   function parseJwt(token) {
     const base64 = token.split('.')[1];
@@ -39,3 +40,4 @@ async function loadUserInfo() {
     }
   }
 })();
+*/

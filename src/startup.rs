@@ -4,6 +4,7 @@ use actix_session::{
     config::PersistentSession
 };
 use actix_web::cookie::time::Duration;
+//use actix_web::middleware::from_fn;
 use actix_web::{
     web, App, HttpServer, HttpResponse,
     dev::Server,
@@ -22,7 +23,10 @@ use std::net::TcpListener;
 use tracing_actix_web::TracingLogger;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use crate::configuration::{DatabaseSettings, Settings};
-use crate::jwt::JwtService;
+use crate::jwt::{
+    JwtService,
+    //jwt_auth_middleware,
+};
 use crate::routes::{
     contents, home_session, home_jwt, validate_session, validate_jwt, logout, register, registration
 };
@@ -114,7 +118,7 @@ async fn run(
             /*
             DB풀과 베이스 URL정보를 애플리케이션 상태에 추가한다.
             Actix Web에서 애플리케이션 전역 상태를 주입하는 메서드이다.
-             */
+            */
             .app_data(db_pool.clone())
             .app_data(base_url.clone())
             .app_data(jwt_secret.clone())

@@ -1,3 +1,4 @@
+use actix_web::cookie::Cookie;
 use actix_web::{
     error::InternalError,
     HttpResponse,
@@ -39,7 +40,6 @@ pub struct LogInResponse {
     pub email: String,
     pub name: String,
     pub nickname: String,
-    pub access_token: Option<String>,
 }
 
 #[tracing::instrument(
@@ -55,7 +55,7 @@ pub async fn get_user_information_session(
         Ok(Some((email, name, nickname))) => {
             //템플릿 구조체로 데이터 저장
             let template = LogInResponse {
-                email, name, nickname, access_token: None
+                email, name, nickname
             };
             //FromResidual 트레이트 : FromResidual 트레이트가 ? 연산자를 사용할 때 중요한 역할을 하는 트레이트이다. 에러 전파 또는 잔여(residual) 값을 상위 함수의 반환 타입으로 변환하는 방식을 정의
             let rendered = template.render().map_err(|e| {
@@ -82,21 +82,30 @@ pub async fn get_user_information_session(
 pub async fn get_user_information_jwt(
     email: &str,
     pool: &PgPool,
-    access_token: String,
+    cookie: Option<Cookie<'static>>,
 ) -> Result<HttpResponse, InternalError<ApiError>> {
     match user_info_query(email, &pool).await {
         Ok(Some((email, name, nickname))) => {
             //println!("access_token : {}", access_token);
             //템플릿 구조체로 데이터 저장
             let template = LogInResponse {
-                email, name, nickname, access_token: Some(access_token)
+                email, name, nickname
             };
             //FromResidual 트레이트 : FromResidual 트레이트가 ? 연산자를 사용할 때 중요한 역할을 하는 트레이트이다. 에러 전파 또는 잔여(residual) 값을 상위 함수의 반환 타입으로 변환하는 방식을 정의
             let rendered = template.render().map_err(|e| {
                 login_redirect(ApiError::from(e))
             })?;
             //서버가 HTML문자열을 응답 본문에 담아서 보내는 구문
-            Ok(HttpResponse::Ok().content_type(ContentType::html()).body(rendered))
+            let response =  match cookie {
+                Some(c) => {
+                    HttpResponse::Ok().content_type(ContentType::html()).cookie(c).body(rendered)
+                }
+                None => {
+                    HttpResponse::Ok().content_type(ContentType::html()).body(rendered)
+                }
+            };
+
+            Ok(response)
         }
         Ok(None) => {
             let e = ApiError::AuthError(anyhow!("No such user").into());

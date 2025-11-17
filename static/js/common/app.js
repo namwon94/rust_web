@@ -1,7 +1,9 @@
+/*
 //fetch에 토큰 자동 추가
 const originalFetch = window.fetch;
 window.fetch = function(...args) {
     const token = localStorage.getItem('access_token');
+    console.log("token : ", token);
 
     if(token && args[1]) {
         args[1].headers = {
@@ -18,6 +20,7 @@ window.fetch = function(...args) {
 
     return originalFetch.apply(this, args);
 };
+*/
 
 function showPopup(url, popupId) {
     fetch(url)

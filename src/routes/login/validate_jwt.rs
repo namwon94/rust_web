@@ -1,8 +1,5 @@
 use actix_web::{
-    error::InternalError,
-    HttpResponse,
-    web,
-    Result,
+    HttpResponse, Result, cookie::{Cookie, SameSite, time::Duration}, error::InternalError, web
 };
 use sqlx::PgPool;
 //anyhow의 확장 트레이트를 스코프 안으로 가져온다.
@@ -23,7 +20,7 @@ use crate::{
     fields(email=tracing::field::Empty, password=tracing::field::Empty)
 )]
 pub async fn validate_jwt(
-    form: web::Json<LogInRequest>,
+    form: web::Form<LogInRequest>,
     pool: web::Data<PgPool>,
     jwt_service: web::Data<JwtService>
 ) -> Result<HttpResponse, InternalError<ApiError>> {
@@ -44,9 +41,19 @@ pub async fn validate_jwt(
 
             //jwt 토큰 생성
             let access_token = jwt_service.create_access_token(&credentials.email, Some("admin".to_string())).expect("Failed to load jwt");
+
+            let cookie = Cookie::build("access_token", access_token.clone())
+                .path("/")
+                .max_age(Duration::minutes(15))
+                .http_only(true)
+                .same_site(SameSite::Lax)
+                .finish();
             //println!("access_token : {}", access_token);
             //async fn은 호출 즉시 실행되지 않고 Future를 반환한다. 실제로 실행하려면 .await가 필요하다.
-            get_user_information_jwt(&credentials.email, &pool, access_token).await
+            let response = get_user_information_jwt(&credentials.email, &pool, Some(cookie)).await?;
+
+            Ok(response)
+
         }
         Ok(None) => {
             let e = ApiError::AuthError(anyhow!("No such user").into());

@@ -15,7 +15,7 @@
             <p class="subtitle">Rust Web Application</p>
         </header>
 
-        <form class="login-form" method="post">
+        <form class="login-form" action="/api/login_jwt" method="post">
             <div class="form-group">
                 <label for="email">이메일</label>
                 <input type="email" id="email" name="email" placeholder="example@email.com" required>
@@ -38,7 +38,7 @@
 
             <div class="actions-container">
                 <!-- <button type="button" class="btn-login" onclick="sessionLogin(event)">세션로그인</button> -->
-                <button type="button" class="btn-login" onclick="jwtLogin(event)">로그인</button>
+                <button type="submit" class="btn-login">로그인</button>
             </div>
 
             <div class="divider">
