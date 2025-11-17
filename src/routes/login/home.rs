@@ -4,11 +4,15 @@ use actix_web::{http::header::ContentType, web, HttpResponse, Result};
 use askama::Template;
 use sqlx::PgPool;
 use crate::error::{e401, e500};
-use crate::routes::login::process::get_user_information_jwt;
+use crate::auth::{
+    JwtService,
+    TypedSession,
+};
 use crate::{
-    jwt::JwtService,
-    session_state::TypedSession,
-    routes::login::process::get_user_information_session,
+    routes::login::process::{
+        get_user_information_session,
+        get_user_information_jwt
+    },
     error::ApiError
 };
 

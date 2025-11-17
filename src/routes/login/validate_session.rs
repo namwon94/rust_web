@@ -8,7 +8,7 @@ use sqlx::PgPool;
 //anyhow의 확장 트레이트를 스코프 안으로 가져온다.
 use anyhow::anyhow;
 use crate::{
-    session_state::TypedSession,
+    auth::TypedSession,
     error::ApiError,
     telemetry::spawn_blocking_with_tracing,
     routes::login::process::{

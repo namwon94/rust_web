@@ -21,7 +21,7 @@ use argon2::{Argon2, PasswordHash, PasswordVerifier, Algorithm, Params, Password
 use secrecy::Secret;
 use secrecy::ExposeSecret;
 use crate::error::ApiError;
-use crate::session_state::TypedSession;
+use crate::auth::TypedSession;
 
 #[derive(Debug, Deserialize)]
 pub struct LogInRequest {

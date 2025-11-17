@@ -22,11 +22,8 @@ use secrecy::{
 use std::net::TcpListener;
 use tracing_actix_web::TracingLogger;
 use sqlx::{postgres::PgPoolOptions, PgPool};
+use crate::auth::JwtService;
 use crate::configuration::{DatabaseSettings, Settings};
-use crate::jwt::{
-    JwtService,
-    //jwt_auth_middleware,
-};
 use crate::routes::{
     contents, home_session, home_jwt, validate_session, validate_jwt, logout, register, registration
 };

@@ -3,10 +3,10 @@ use actix_web_lab::middleware::Next;
 use actix_web::body::MessageBody;
 use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::FromRequest;
-use crate::session_state::TypedSession;
-use crate::error::{e500, see_other};
 use std::ops::Deref;
 use actix_web::HttpMessage;
+use crate::error::{e500, see_other};
+use crate::auth::TypedSession;
 
 /*
 String 타입은 std::marker::Copy 트레이트를 구현하지 않습니다. 

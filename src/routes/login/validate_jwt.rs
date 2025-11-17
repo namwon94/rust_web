@@ -7,7 +7,7 @@ use anyhow::anyhow;
 use crate::{
     //session_state::TypedSession,
     error::ApiError, 
-    jwt::JwtService, 
+    auth::JwtService, 
     telemetry::spawn_blocking_with_tracing,
     routes::login::process::{
         Credentials, LogInRequest, get_user_information_jwt, login_redirect, validate_email_query, verify_password_hash
