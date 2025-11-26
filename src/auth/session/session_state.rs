@@ -8,6 +8,7 @@ pub struct TypedSession(Session);
 impl TypedSession{
     const EMAIL_KEY: &'static str = "email";
 
+    //----------------------------------session 정보 저장 시 필요한 메서드들------------------------------------
     pub fn renew(&self) {
         self.0.renew()
     }
@@ -23,6 +24,8 @@ impl TypedSession{
     pub fn delete_email(self) {
         self.0.purge()
     }
+    //----------------------------------refresh token 관련 메서드들------------------------------------
+
 }
 
 impl FromRequest for TypedSession {

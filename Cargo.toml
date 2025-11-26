@@ -49,6 +49,8 @@ hex = "0.4"
 actix-web-flash-messages = {version = "0.4", features = ["cookies"]}
 # 세션 관리 기능 제공 -> 레디스 백엔드
 actix-session = {version = "0.10", features = ["redis-session"]}
+# redis 사용
+redis = {version = "0.23", feature = ["tokio-comp"]}
 # 빠른 릴리스 정책
 actix-web-lab = "0.16"
 # 사용자 정의 에러 타입을 쉽고 간편하게 정의하도록 도와주는 라이브러리

@@ -50,7 +50,7 @@ pub async fn home_jwt(
             let claims = jwt_service.verify_access_token(&t)
                 .map_err(|e| e401(ApiError::Unauthorized(format!("Invalid token : {}", e))))?;
             println!("claims.email : {}", claims.email);
-            return get_user_information_jwt(&claims.email, &pool, None).await.map_err(|e| e.into())
+            return get_user_information_jwt(&claims.email, &pool, None, None).await.map_err(|e| e.into())
         },
         None => {
             let template = HomeTemplate;

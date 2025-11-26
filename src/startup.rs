@@ -43,10 +43,9 @@ impl Application {
         //TCP 네트워크 서버를 구현할 때, 특정 IP주소와 포트로 들어오는 클라이언트의 TCP연결 요청을 받아들이고 대기하는 역할을 하는 표준 라이브러리의 구조체 이다.
         let listener = TcpListener::bind(&address)?;
         let port = listener.local_addr().unwrap().port();
-        let jwt_secret = JwtService::new(configuration.jwt.secret);
         let server = run(
             listener, connection_pool, configuration.application.base_url, configuration.application.hmac_secret,
-            configuration.redis_uri, jwt_secret,
+            configuration.redis_uri, configuration.jwt.jwt_secret,
         ).await?;
 
         Ok(Self{port, server})
@@ -67,7 +66,7 @@ impl Application {
 pub struct ApplicationBaseUrl(pub String);
 
 async fn run(
-    listener: TcpListener, db_pool: PgPool, base_url: String, hamc_secret: Secret<String>, redis_uri: Secret<String>, jwt_secret: JwtService
+    listener: TcpListener, db_pool: PgPool, base_url: String, hamc_secret: Secret<String>, redis_uri: Secret<String>, jwt_secret: Secret<String>,
 ) -> Result<Server, anyhow::Error> {
     let db_pool = web::Data::new(db_pool);
     let base_url = web::Data::new(ApplicationBaseUrl(base_url));
@@ -75,9 +74,10 @@ async fn run(
     let message_store = CookieMessageStore::builder(secret_key.clone()).build();
     let message_framework = FlashMessagesFramework::builder(message_store).build();
     let redis_store = RedisSessionStore::new(redis_uri.expose_secret()).await?;
-    let jwt_secret = web::Data::new(jwt_secret);
+    let redis_client = redis::Client::open(redis_uri.expose_secret().as_str()).expect("Failed to create Redis client");
+    let jwt_service = web::Data::new(JwtService::new(jwt_secret.expose_secret().clone(), redis_client.clone()));
     /*
-    HttpServer::new 클로저 내에서 App::new()를 만들고 미들웨어, 라우트, 공유 상태를 설정한다.
+    HttpServer::new 클로저 내에서 App::new()를 만들고 미들웨어, 라우트, 공유 상태를 설정한다.s
     클로저를 인자로 받아 실행 하는 이유
         -> 서버가 시작될 때 합넙만 실행되는 것이 아니라, 요청이 들어올 때마다 필요한 설정을 새로 만들 수 있도록 설계
     move 클로저 : 외부에 잡아야 할 값이 있을 때 클로저 앞에 move가 붙는다. 클로저가 캡처하는 외부 변수들의 소유권을 가져가서 다른 스레드로 안전하게 전달할 수 있다.
@@ -118,7 +118,7 @@ async fn run(
             */
             .app_data(db_pool.clone())
             .app_data(base_url.clone())
-            .app_data(jwt_secret.clone())
+            .app_data(jwt_service.clone())
     })
     .listen(listener)?
     .run();

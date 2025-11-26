@@ -39,7 +39,7 @@ pub struct DatabaseSettings {
 
 #[derive(serde::Deserialize, Clone)]
 pub struct JwtSettings {
-    pub secret: String,
+    pub jwt_secret: Secret<String>,
 }
 
 //PgConnections는 DB연결 시 주로 사용된다. without_db는 DB선택 없이 서버 연결 설정만 하고, with_db는 해당 DB까지 지정해주는 기능

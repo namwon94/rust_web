@@ -40,17 +40,25 @@ pub async fn validate_jwt(
             .map_err(|e| login_redirect(e))?;
 
             //jwt 토큰 생성
-            let access_token = jwt_service.create_access_token(&credentials.email, Some("admin".to_string())).expect("Failed to load jwt");
+            let access_token = jwt_service.create_access_token(&credentials.email, Some("admin".to_string())).expect("Failed to load jwt(access)");
+            let refresh_token = jwt_service.create_refresh_token(&credentials.email).expect("Faile to loat jwt(refresh)");
 
-            let cookie = Cookie::build("access_token", access_token.clone())
+            let access_cookie = Cookie::build("access_token", access_token.clone())
                 .path("/")
                 .max_age(Duration::minutes(15))
                 .http_only(true)
                 .same_site(SameSite::Lax)
                 .finish();
-            //println!("access_token : {}", access_token);
+            let refresh_cookie = Cookie::build("refresh_token", refresh_token.clone())
+                .path("/")
+                .max_age(Duration::days(7))
+                .http_only(true)
+                .secure(true)
+                .same_site(SameSite::Strict)
+                .finish();
+            //println!("access_token : {}, refresh_token : {}", access_token, refresh_token);
             //async fn은 호출 즉시 실행되지 않고 Future를 반환한다. 실제로 실행하려면 .await가 필요하다.
-            let response = get_user_information_jwt(&credentials.email, &pool, Some(cookie)).await?;
+            let response = get_user_information_jwt(&credentials.email, &pool, Some(access_cookie), Some(refresh_cookie)).await?;
 
             Ok(response)
 

@@ -6,4 +6,4 @@ database:
   require_ssl: false
 # jwt_secret
 jwt:
-  secret: "my_local_secret_key"
+  jwt_secret: "my_local_secret_key"

@@ -1,11 +1,12 @@
-use actix_web::cookie::Cookie;
+use actix_web::HttpRequest;
 use actix_web::{
     error::InternalError,
     HttpResponse,
     http::header::ContentType,
     //http::header::LOCATION,
-    //web,
+    web,
     Result,
+    cookie::Cookie
 };
 //use actix_web_flash_messages::FlashMessage;
 use sqlx::PgPool;
@@ -20,8 +21,11 @@ use argon2::password_hash::SaltString;
 use argon2::{Argon2, PasswordHash, PasswordVerifier, Algorithm, Params, PasswordHasher, Version};
 use secrecy::Secret;
 use secrecy::ExposeSecret;
-use crate::error::ApiError;
-use crate::auth::TypedSession;
+use crate::error::{
+    ApiError,
+    e500
+};
+use crate::auth::{JwtService};
 
 #[derive(Debug, Deserialize)]
 pub struct LogInRequest {
@@ -82,7 +86,8 @@ pub async fn get_user_information_session(
 pub async fn get_user_information_jwt(
     email: &str,
     pool: &PgPool,
-    cookie: Option<Cookie<'static>>,
+    access_cookie: Option<Cookie<'static>>,
+    refresh_cookie: Option<Cookie<'static>>,
 ) -> Result<HttpResponse, InternalError<ApiError>> {
     match user_info_query(email, &pool).await {
         Ok(Some((email, name, nickname))) => {
@@ -96,11 +101,11 @@ pub async fn get_user_information_jwt(
                 login_redirect(ApiError::from(e))
             })?;
             //서버가 HTML문자열을 응답 본문에 담아서 보내는 구문
-            let response =  match cookie {
-                Some(c) => {
-                    HttpResponse::Ok().content_type(ContentType::html()).cookie(c).body(rendered)
+            let response =  match (access_cookie, refresh_cookie) {
+                (Some(access), Some(refresh)) => {
+                    HttpResponse::Ok().content_type(ContentType::html()).cookie(access).cookie(refresh).body(rendered)
                 }
-                None => {
+                _ => {
                     HttpResponse::Ok().content_type(ContentType::html()).body(rendered)
                 }
             };
@@ -209,12 +214,21 @@ pub fn login_redirect(e: ApiError) -> InternalError<ApiError> {
 #[template(path = "login/home.html")]
 struct LogOutResponse;
 
-pub async fn logout(session: TypedSession) -> Result<HttpResponse> {
-    session.delete_email();
+pub async fn logout(
+    jwt_service: web::Data<JwtService>,
+    req: HttpRequest,
+) -> Result<HttpResponse> {
     let template = LogOutResponse;
     let rendered = template.render().map_err(|e| {
-        actix_web::error::ErrorInternalServerError(e)
+        e500(ApiError::InternalServerError(format!("InternalServerError : {}", e)))
     })?;
+    let access_cookie = jwt_service.remove_token_cookie("access_token");
+    let refresh_cookie = jwt_service.remove_token_cookie("refresh_token");
 
-    Ok(HttpResponse::Ok().content_type(ContentType::html()).body(rendered))
+    jwt_service.remove_refresh_token(&req)
+        .map_err(|e| {
+                e500(ApiError::InternalServerError(format!("InternalServerError : {}", e)))
+        })?;
+
+    Ok(HttpResponse::Ok().content_type(ContentType::html()).cookie(access_cookie).cookie(refresh_cookie).body(rendered))
 }
