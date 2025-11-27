@@ -15,6 +15,10 @@ use redis::{
     //RedisResult,
 };
 use uuid::Uuid;
+use crate::error::{
+    ApiError,
+    e500
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccessTokenClaims {
@@ -101,7 +105,7 @@ impl JwtService {
         TTL : 7일
          */
         let mut con = self.redis_client.get_connection()?;
-        println!("jti(create) : {}", jti);
+        //println!("jti(create) : {}", jti);
         let redis_key = format!("refresh_token:{}:{}", email, jti);
         con.set_ex::<_, _, ()>(&redis_key, &token, 7*24*60*60)?;
         /*
@@ -121,8 +125,62 @@ impl JwtService {
             &DecodingKey::from_secret(self.secret.as_ref()),
             &Validation::default()
         )?;
+        let claims = token_data.claims;
 
-        Ok(token_data.claims)
+        Ok(claims)
+    }
+
+    //refresh token 검증 함수
+    pub fn verify_refresh_token(
+        &self,
+        token: &str
+    ) -> Result<RefreshTokenClaims, Box<dyn std::error::Error>> {
+        let token_data = decode::<RefreshTokenClaims> (
+            token,
+            &DecodingKey::from_secret(self.secret.as_ref()),
+            &Validation::default()
+        )?;
+        let claims = token_data.claims;
+        let mut con = self.redis_client.get_connection()?;
+        let redis_key = format!("refresh_token:{}:{}", claims.email, claims.jti);
+        let exists: bool = con.exists(&redis_key)?;
+
+        if !exists {
+            return Err("Refresh token not found or revoked".into())
+        }
+
+        Ok(claims)
+    }
+
+    //refresh_token rotate 함수
+    pub fn rotate_refresh_token(
+        &self,
+        token: &str,
+        req: HttpRequest,
+    ) -> Result<String, Box<dyn std::error::Error>> {
+        let token_data = decode::<RefreshTokenClaims>(
+            &token,
+            &DecodingKey::from_secret(self.secret.as_ref()),
+            &Validation::default()
+        )?;
+        let claims = token_data.claims;
+        self.remove_refresh_token(&req).map_err(|e| {
+                e500(ApiError::InternalServerError(format!("InternalServerError : {}", e)))
+        })?;
+
+        let refresh_token = self.create_refresh_token(&claims.email).expect("Fail to create refresh token");
+
+        Ok(refresh_token)
+    }
+
+    //refresh token으로 새로운 Access Token 발급
+    pub fn refresh_access_token(
+        &self,
+        refresh_token: &str,
+        role: Option<String>
+    ) -> Result<String, Box<dyn std::error::Error>> {
+        let claims = self.verify_refresh_token(refresh_token)?;
+        self.create_access_token(&claims.email, role).map_err(|e| e.into())
     }
 
     //access token 추출 함수(쿠키용)

@@ -55,7 +55,7 @@ pub async fn get_user_information_session(
     email: &str,
     pool: &PgPool,
 ) -> Result<HttpResponse, InternalError<ApiError>> {
-    match user_info_query(email, &pool).await {
+    match user_info_query(&email, &pool).await {
         Ok(Some((email, name, nickname))) => {
             //템플릿 구조체로 데이터 저장
             let template = LogInResponse {
@@ -89,7 +89,7 @@ pub async fn get_user_information_jwt(
     access_cookie: Option<Cookie<'static>>,
     refresh_cookie: Option<Cookie<'static>>,
 ) -> Result<HttpResponse, InternalError<ApiError>> {
-    match user_info_query(email, &pool).await {
+    match user_info_query(&email, &pool).await {
         Ok(Some((email, name, nickname))) => {
             //println!("access_token : {}", access_token);
             //템플릿 구조체로 데이터 저장
