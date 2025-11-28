@@ -222,10 +222,11 @@ pub async fn logout(
     let rendered = template.render().map_err(|e| {
         e500(ApiError::InternalServerError(format!("InternalServerError : {}", e)))
     })?;
+    let refresh_token = jwt_service.extract_refresh_token(&req).expect("Fail to load jwt(refresh)");
     let access_cookie = jwt_service.remove_token_cookie("access_token");
     let refresh_cookie = jwt_service.remove_token_cookie("refresh_token");
 
-    jwt_service.remove_refresh_token(&req)
+    jwt_service.remove_refresh_token(&refresh_token)
         .map_err(|e| {
                 e500(ApiError::InternalServerError(format!("InternalServerError : {}", e)))
         })?;

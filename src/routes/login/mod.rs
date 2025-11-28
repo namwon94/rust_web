@@ -11,3 +11,4 @@ pub use registration::registration;
 pub use registration::register;
 pub use validate_session::validate_session;
 pub use validate_jwt::validate_jwt;
+pub use validate_jwt::check_token;

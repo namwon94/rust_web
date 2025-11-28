@@ -4,7 +4,7 @@ use actix_web::{
     },
 };
 use chrono::{Utc, Duration};
-use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, encode, decode};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode, errors::ErrorKind};
 use serde::{
     Serialize,
     Deserialize
@@ -16,8 +16,7 @@ use redis::{
 };
 use uuid::Uuid;
 use crate::error::{
-    ApiError,
-    e500
+    JwtError,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -61,7 +60,7 @@ impl JwtService {
         &self,
         email: &str,
         role: Option<String>,
-    ) -> Result<String, jsonwebtoken::errors::Error> {
+    ) -> Result<String, JwtError> {
         let expiration = Utc::now()
             .checked_add_signed(Duration::minutes(15))
             .expect("valid timestamp")
@@ -74,17 +73,24 @@ impl JwtService {
             role
         };
         //println!("sucess");
-        encode(&Header::default(), &claims, &EncodingKey::from_secret(self.secret.as_ref()))
+        let token = encode(
+            &Header::default(), 
+            &claims, 
+            &EncodingKey::from_secret(self.secret.as_ref())
+        )
+        .map_err(|e| JwtError::Other(e.to_string()))?;
+
+        Ok(token)
     }
 
     //refresh token 생성 함수
     pub fn create_refresh_token(
         &self,
         email: &str,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<String, JwtError> {
         let jti = Uuid::new_v4().to_string();
         let expiration = Utc::now()
-            .checked_add_signed(Duration::minutes(15))
+            .checked_add_signed(Duration::days(15))
             .expect("valid timestamp")
             .timestamp() as usize;
         let claims = RefreshTokenClaims {
@@ -97,17 +103,18 @@ impl JwtService {
             &Header::default(),
             &claims,
             &EncodingKey::from_secret(self.secret.as_ref())
-        )?;
+        )
+        .map_err(|e| JwtError::Other(e.to_string()))?;
         /*
         Redis에 Refresh Token 정보 저장
         Key : refresh_token:{email}:{jti}
         Value : token
         TTL : 7일
          */
-        let mut con = self.redis_client.get_connection()?;
+        let mut con = self.redis_client.get_connection().map_err(|e| JwtError::RedisError(e.to_string()))?;
         //println!("jti(create) : {}", jti);
         let redis_key = format!("refresh_token:{}:{}", email, jti);
-        con.set_ex::<_, _, ()>(&redis_key, &token, 7*24*60*60)?;
+        con.set_ex::<_, _, ()>(&redis_key, &token, 7*24*60*60).map_err(|e| JwtError::RedisError(e.to_string()))?;
         /*
         반환 타입을 명시해야된다. -> Rust2024에서는 ()fallback을 금지한다.
          */
@@ -119,12 +126,19 @@ impl JwtService {
     pub fn verify_access_token(
         &self,
         token: &str
-    ) -> Result<AccessTokenClaims, jsonwebtoken::errors::Error> {
+    ) -> Result<AccessTokenClaims, JwtError> {
         let token_data = decode::<AccessTokenClaims>(
             token,
             &DecodingKey::from_secret(self.secret.as_ref()),
             &Validation::default()
-        )?;
+        )
+        .map_err(|e| match *e.kind() {
+            ErrorKind::ExpiredSignature => JwtError::ExpiredToken,
+            ErrorKind::InvalidSignature => JwtError::InvalidSignature,
+            ErrorKind::InvalidIssuer => JwtError::InvalidIssuer,
+            ErrorKind::InvalidToken => JwtError::InvalidToken,
+            _ => JwtError::Other(e.to_string()),
+        })?;
         let claims = token_data.claims;
 
         Ok(claims)
@@ -134,19 +148,29 @@ impl JwtService {
     pub fn verify_refresh_token(
         &self,
         token: &str
-    ) -> Result<RefreshTokenClaims, Box<dyn std::error::Error>> {
+    ) -> Result<RefreshTokenClaims, JwtError> {
         let token_data = decode::<RefreshTokenClaims> (
             token,
             &DecodingKey::from_secret(self.secret.as_ref()),
             &Validation::default()
-        )?;
+        )
+        .map_err(|e| match *e.kind() {
+            ErrorKind::ExpiredSignature => JwtError::ExpiredToken,
+            ErrorKind::InvalidSignature => JwtError::InvalidSignature,
+            ErrorKind::InvalidIssuer => JwtError::InvalidIssuer,
+            ErrorKind::InvalidToken => JwtError::InvalidToken,
+            _ => JwtError::Other(e.to_string()),
+        })?;
+
         let claims = token_data.claims;
-        let mut con = self.redis_client.get_connection()?;
+        println!("claims.email : {}, claims.jti : {}", claims.email, claims.jti);
+        let mut con = self.redis_client.get_connection().map_err(|e| JwtError::RedisError(e.to_string()))?;
         let redis_key = format!("refresh_token:{}:{}", claims.email, claims.jti);
-        let exists: bool = con.exists(&redis_key)?;
+        println!("redis_key : {}", redis_key);
+        let exists: bool = con.exists(&redis_key).map_err(|e| JwtError::RedisError(e.to_string()))?;
 
         if !exists {
-            return Err("Refresh token not found or revoked".into())
+            return Err(JwtError::TokenRevoked)
         }
 
         Ok(claims)
@@ -156,18 +180,22 @@ impl JwtService {
     pub fn rotate_refresh_token(
         &self,
         token: &str,
-        req: HttpRequest,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<String, JwtError> {
         let token_data = decode::<RefreshTokenClaims>(
             &token,
             &DecodingKey::from_secret(self.secret.as_ref()),
             &Validation::default()
-        )?;
-        let claims = token_data.claims;
-        self.remove_refresh_token(&req).map_err(|e| {
-                e500(ApiError::InternalServerError(format!("InternalServerError : {}", e)))
+        )
+        .map_err(|e| match *e.kind() {
+            ErrorKind::ExpiredSignature => JwtError::ExpiredToken,
+            ErrorKind::InvalidSignature => JwtError::InvalidSignature,
+            ErrorKind::InvalidIssuer => JwtError::InvalidIssuer,
+            ErrorKind::InvalidToken => JwtError::InvalidToken,
+            _ => JwtError::Other(e.to_string()),
         })?;
-
+        let claims = token_data.claims;
+        self.remove_refresh_token(&token).map_err(|e| JwtError::Other(e.to_string()))?;
+        
         let refresh_token = self.create_refresh_token(&claims.email).expect("Fail to create refresh token");
 
         Ok(refresh_token)
@@ -178,7 +206,7 @@ impl JwtService {
         &self,
         refresh_token: &str,
         role: Option<String>
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<String, JwtError> {
         let claims = self.verify_refresh_token(refresh_token)?;
         self.create_access_token(&claims.email, role).map_err(|e| e.into())
     }
@@ -202,20 +230,26 @@ impl JwtService {
     //refresh token 삭제(Redis) 함수
     pub fn remove_refresh_token(
         &self,
-        req: &HttpRequest,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let token = self.extract_refresh_token(req).ok_or("Refresh token not found in cookie")?;
+        token: &str,
+    ) -> Result<(), JwtError> {
         let token_data = decode::<RefreshTokenClaims>(
             &token,
             &DecodingKey::from_secret(self.secret.as_ref()),
             &Validation::default()
-        )?;
+        )
+        .map_err(|e| match *e.kind() {
+            ErrorKind::ExpiredSignature => JwtError::ExpiredToken,
+            ErrorKind::InvalidSignature => JwtError::InvalidSignature,
+            ErrorKind::InvalidIssuer => JwtError::InvalidIssuer,
+            ErrorKind::InvalidToken => JwtError::InvalidToken,
+            _ => JwtError::Other(e.to_string()),
+        })?;
         let claims = token_data.claims;
-        let mut con = self.redis_client.get_connection()?;
+        let mut con = self.redis_client.get_connection().map_err(|e| JwtError::RedisError(e.to_string()))?;
         //println!("jti(remove) : {}", claims.jti);
         let redis_key = format!("refresh_token:{}:{}", claims.email, claims.jti);
         //println!("redis key: {}", redis_key);
-        con.del::<_, ()>(&redis_key)?;
+        con.del::<_, ()>(&redis_key).map_err(|e| JwtError::RedisError(e.to_string()))?;
 
         Ok(())
     }

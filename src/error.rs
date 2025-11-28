@@ -20,7 +20,41 @@ pub enum ApiError {
     InternalServerError(String)
 }
 
+#[derive(thiserror::Error)]
+pub enum JwtError {
+    //만료
+    #[error("Expired token")]
+    ExpiredToken,
+    //변조 / 잘못된 secret
+    #[error("Invalid signature")]
+    InvalidSignature,
+    //iss 잘못된
+    #[error("Invalid issuer")]
+    InvalidIssuer,
+    //포맷 깨짐 / 구조 이상
+    #[error("Invalid token")]
+    InvalidToken,
+    #[error("Token revoked")]
+    //refresh token의 정보가 조작 및 rotate된 이전 토큰 확인
+    TokenRevoked,
+    //missing refresh token
+    #[error("Refresh token missing in cookie")]
+    MissingRefreshToken,
+    //redis 통신 오류 (서버 문제)
+    #[error("Redis error : {0}")]
+    RedisError(String),
+    //기타 jwt 관련된 에러
+    #[error("Other jwt error : {0}")]
+    Other(String),
+}
+
 impl std::fmt::Debug for ApiError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        error_chain_fmt(self, f)
+    }
+}
+
+impl std::fmt::Debug for JwtError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         error_chain_fmt(self, f)
     }

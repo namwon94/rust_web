@@ -7,7 +7,7 @@ use actix_web::{
     HttpMessage
 };
 use actix_web_lab::middleware::Next;
-use crate::auth::JwtService;
+use crate::{auth::JwtService};
 
 
 //미들웨어에서 사용하는 jwt 인증
@@ -23,7 +23,7 @@ pub async fn jwt_auth_middleware(
 
     //3. 토큰 검증
     let claims = jwt_service.verify_access_token(&token)
-        .map_err(|e| ErrorUnauthorized(format!("Invalid token: {}", e)))?;
+        .map_err(|e| ErrorUnauthorized(e.to_string()))?;
 
     //4. 검증된 Claims를 request extensions에 저장
     http_req.extensions_mut().insert(claims);
